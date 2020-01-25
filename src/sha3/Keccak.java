@@ -121,7 +121,7 @@ public class Keccak {
         long[] stateOut = stateIn;
         int l = floorLog(bitLen/25);
         for (int i = 12 + 2*l - rounds; i < 12 + 2*l; i++) {
-            stateOut = iota(chi(rhoPhi(theta(stateOut))), i);
+            stateOut = iota(chi(rhoPhi(theta(stateOut))), i); // sec 3.3 FIPS 202
         }
         return stateOut;
     }
@@ -134,7 +134,7 @@ public class Keccak {
      * @return the state after the theta function has been applied (array of longs)
      */
     private static long[] theta(long[] stateIn) {
-        long[] stateOut = new long[25]; //TODO: check input dimensions
+        long[] stateOut = new long[25];
         long[] C = new long[5];
 
         for (int i = 0; i < 5; i++) {
@@ -160,7 +160,7 @@ public class Keccak {
      */
     private static long[] rhoPhi(long[] stateIn) {
         long[] stateOut = new long[25];
-        stateOut[0] = stateIn[0]; // assure to copy first value
+        stateOut[0] = stateIn[0]; // first value needs to be copied
         long t = stateIn[1], temp;
         int ind;
         for (int i = 0; i < 24; i++) {
@@ -197,7 +197,7 @@ public class Keccak {
      */
     private static long[] iota(long[] stateIn, int round) {
         stateIn[0] ^= rConst[round];
-        return stateIn; // does returning vs. in place cause any loss of efficiency?
+        return stateIn;
     }
 
 
