@@ -44,6 +44,39 @@ public class Keccak {
             15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
     };
 
+    private enum ENCODE {Left, Right};
+
+    /**
+     * The Keccak Message Authentication with extensible output, ref NIST SP 800-185 sec 4.3.1
+     * @param key the key
+     * @param in the input bytes
+     * @param bitLen the desired bit length
+     * @param custStr the customization string
+     * @return the message authentication code derived from the provided input
+     */
+    public static byte[] KMACXOF256(byte[] key, byte[] in, int bitLen, String custStr) {
+        byte[] newIn = mergeByteArrays(bytepad(encodeString(key), 136), in);
+        newIn = mergeByteArrays(newIn, lrEncode(0, ENCODE.Right));
+        return cSHAKE256(newIn, bitLen,  "KMAC", custStr);
+    }
+
+    /**
+     * cSHAKE func ref sec 3.3 NIST SP 800-185
+     * @param in the byte array to hash
+     * @param bitLen the bit length of the desired output
+     * @param funcName the name of the function to use
+     * @param custStr the customization string
+     * @return the message digest based on Keccak[512]
+     */
+    public static byte[] cSHAKE256(byte[] in, int bitLen, String funcName, String custStr) {
+        byte[] strBytes = mergeByteArrays(encodeString(funcName.getBytes()), encodeString(custStr.getBytes()));
+        byte[] padded = bytepad(strBytes, 136);
+        byte[] fin = mergeByteArrays(padded, in); // append two zero bits here? from test vectors seems like 0x04 is convention
+        fin = mergeByteArrays(fin, new byte[] {0x04});
+
+        return sponge(fin, bitLen, 512);
+    }
+
     /**
      * Produces a variable length message digest based on the keccak-f perumation
      * over the user input. Ref. NIST FIPS 202 sec. 6.2
@@ -205,6 +238,53 @@ public class Keccak {
      *                    Auxiliary Methods                     *
      ************************************************************/
 
+    /**
+     * Pads a bit string, sec 2.3.3 NIST SP 800-185
+     * @param str the bit string to pad
+     * @param w the desired factor of the padding
+     * @return a byte array prepended by lrEncode(w) such that it's length is an even multiple of w
+     */
+    private static byte[] bytepad(byte[] str, int w) {
+        byte[] lEnc = lrEncode(w, ENCODE.Left);
+        int len = lEnc.length + str.length + (w - (lEnc.length + str.length) % w);
+        byte[] out = Arrays.copyOf(lEnc, len);
+        System.arraycopy(str, 0, out, lEnc.length, str.length);
+        return out;
+    }
+
+    /**
+     * The encodeString func, NIST SP 800-185 2.3.2
+     * @param str the bit string to encode (as a byte array)
+     * @return the bit string produced by prepending the encoding of str.length to str
+     */
+    private static byte[] encodeString(byte[] str) {
+        byte[] lEnc = lrEncode(str.length*8, ENCODE.Left); // bitwise length encoding
+        byte[] out = Arrays.copyOf(lEnc, lEnc.length + str.length);
+        System.arraycopy(str, 0, out, lEnc.length, str.length);
+        return out;
+    }
+
+    /**
+     * The left/right encode func specified in sec. 2.3.1 NIST SP 800-185
+     * @param len the integer to encode
+     * @param dir the desired direction of the encoding
+     * @return a byte array: see NIST SP 800-185 sec. 2.3.1
+     */
+    private static byte[] lrEncode(long len, ENCODE dir) {
+        if (len==0) return dir == ENCODE.Left ? new byte[] {1, 0} : new byte[] {0, 1};
+        byte[] buf = new byte[8];
+        long l = len;
+        int cnt = 0;
+        while (l > 0) {
+            byte b = (byte) (l & 0xffL);
+            l = l>>>(8);
+            buf[7 - cnt++] = b;
+        }
+        byte[] out = new byte[cnt + 1];
+        System.arraycopy(buf, 8 - cnt, out, dir == ENCODE.Left ? 1 : 0, cnt);
+        out[dir == ENCODE.Left ? 0 : out.length - 1] = (byte) cnt;
+        return out;
+    }
 
     /**
      * Converts an extended state array to an array of bytes of bit length bitLen (equivalent to Trunc_r).
@@ -263,6 +343,12 @@ public class Keccak {
             word += (((long)in[offset + i]) & 0xff)<<(8*i);
         }
         return word;
+    }
+
+    private static byte[] mergeByteArrays(byte[] b1, byte[] b2) {
+        byte[] mrg = Arrays.copyOf(b1, b1.length + b2.length);
+        System.arraycopy(b2, 0, mrg, b1.length, b2.length);
+        return mrg;
     }
 
     private static long[] xorStates(long[] s1, long[] s2) {
