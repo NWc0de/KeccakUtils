@@ -12,7 +12,7 @@ public class KeccakTest {
      * Test vectors courtesy of
      * https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHAKE256_Msg1600.pdf
      */
-    int[] testVectorOne = {
+    int[] shakeOut = {
             0xCD, 0x8A, 0x92, 0x0E, 0xD1, 0x41, 0xAA, 0x04, 0x07,
             0xA2, 0x2D, 0x59, 0x28, 0x86, 0x52, 0xE9, 0xD9, 0xF1,
             0xA7, 0xEE, 0x0C, 0x1E, 0x7C, 0x1C, 0xA6, 0x99, 0x42,
@@ -110,11 +110,11 @@ public class KeccakTest {
         byte[] test = new byte[200]; //
         Arrays.fill(test, (byte) 0xA3);
         byte[] out = Keccak.SHAKE256(test, 4096);
-        Assert.assertEquals(testVectorOne.length, out.length);
+        Assert.assertEquals(shakeOut.length, out.length);
 
         for (int i = 0; i < out.length; i++) {
             // equality is tested with a bytewise xor to resolve integer/byte representation disparity
-            Assert.assertEquals(0, (out[i] ^ testVectorOne[i]) & 0xff);
+            Assert.assertEquals(0, (out[i] ^ shakeOut[i]) & 0xff);
         }
     }
 }

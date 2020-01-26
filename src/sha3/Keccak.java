@@ -69,10 +69,9 @@ public class Keccak {
      * @return the message digest based on Keccak[512]
      */
     public static byte[] cSHAKE256(byte[] in, int bitLen, String funcName, String custStr) {
-        byte[] strBytes = mergeByteArrays(encodeString(funcName.getBytes()), encodeString(custStr.getBytes()));
-        byte[] padded = bytepad(strBytes, 136);
-        byte[] fin = mergeByteArrays(padded, in); // append two zero bits here? from test vectors seems like 0x04 is convention
-        fin = mergeByteArrays(fin, new byte[] {0x04});
+        byte[] fin = mergeByteArrays(encodeString(funcName.getBytes()), encodeString(custStr.getBytes()));
+        fin = mergeByteArrays(bytepad(fin, 136), in);
+        fin = mergeByteArrays(fin, new byte[] {0x04}); // append two zero bits here? from test vectors seems like 0x04 is convention
 
         return sponge(fin, bitLen, 512);
     }
@@ -278,7 +277,7 @@ public class Keccak {
         while (l > 0) {
             byte b = (byte) (l & 0xffL);
             l = l>>>(8);
-            buf[7 - cnt++] = b;
+            buf[7 - cnt++] = b; // reverse for appropriate ordering
         }
         byte[] out = new byte[cnt + 1];
         System.arraycopy(buf, 8 - cnt, out, dir == ENCODE.Left ? 1 : 0, cnt);
@@ -323,7 +322,7 @@ public class Keccak {
                 state[j] = word;
                 offset += 8;
             }
-            // remaining (capacity/64) words will be 0 ref alg 8. step 6 FIPS 202
+            // remaining (capacity/64) words will be 0, ref alg 8. step 6 FIPS 202
             states[i] = state;
         }
         return states;
