@@ -69,6 +69,8 @@ public class Keccak {
      * @return the message digest based on Keccak[512]
      */
     public static byte[] cSHAKE256(byte[] in, int bitLen, String funcName, String custStr) {
+        if (funcName.equals("") && custStr.equals("")) return SHAKE256(in, bitLen);
+
         byte[] fin = mergeByteArrays(encodeString(funcName.getBytes()), encodeString(custStr.getBytes()));
         fin = mergeByteArrays(bytepad(fin, 136), in);
         fin = mergeByteArrays(fin, new byte[] {0x04}); // append two zero bits here? from test vectors seems like 0x04 is convention
