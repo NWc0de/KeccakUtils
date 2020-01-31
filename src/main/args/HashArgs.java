@@ -1,16 +1,17 @@
 /*
- * Defines the cli arguments for Keccack Cli
+ * Defines the cli arguments for KHash.
+ * Author: Spencer Little
  */
 
-package main;
+package main.args;
 
 import com.beust.jcommander.Parameter;
 
 /**
- * Defines the cli arguments for Keccak.
+ * Defines the cli arguments for KHash.
  * @author Spencer Little
  */
-public class CliArgs {
+public class HashArgs {
 
     @Parameter(names = { "-op", "-operation" }, description = "KMACKXOF256, cSHAKE256.", required = true)
     public String op;
@@ -33,19 +34,19 @@ public class CliArgs {
     @Parameter(names = { "-l", "-bitLen" }, description = "The desired output length, in bits.")
     public int bitLen = 4096;
 
-    @Parameter(names = { "-h", "--help" }, description = "Display help message")
+    @Parameter(names = { "-h", "-help" }, description = "Display help message")
     public boolean help = false;
 
     /*
      * Displays a help message specifying accepted and required cli arguments
      */
     public static void showHelp() {
-        String help = "Options: \njava KeccakCli \n-op|-operation <KMACXOF256 or cSHAKE256> " +
+        String help = "Options: \njava KHash \n-op|-operation <KMACXOF256 or cSHAKE256> " +
                 "\n-im|--input-mode <file or string> file -> interpret as URL, string -> read bytes directly " +
                 "\n-i|-input <file path or string> provide the data to be processed " +
                 "\n-cstr|--customization-str <an arbitrary string> the customization string for cSHAKE256 " +
                 "\n-k|-key <URL corresponding to the key file> provides the key for KMACXOF256 " +
-                "\n-h|--help displays this help message";
+                "\n-h|-help displays this help message";
         System.out.println(help);
     }
 
