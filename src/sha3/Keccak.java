@@ -296,11 +296,13 @@ public class Keccak {
     private static byte[] stateToByteArray(long[] state, int bitLen) {
         if (state.length*64 < bitLen) throw new IllegalArgumentException("State is of insufficient length to produced desired bit length.");
         byte[] out = new byte[bitLen/8];
-        for (int i = 0; i < bitLen/64; i++) {
-            long word = state[i];
-            for (int b = 0; b < 8; b++) {
+        int wrdInd = 0;
+        while (wrdInd*64 < bitLen) {
+            long word = state[wrdInd++];
+            int fill = wrdInd*64 > bitLen ? (bitLen - (wrdInd - 1) * 64) / 8 : 8;
+            for (int b = 0; b < fill; b++) {
                 byte ubt = (byte) (word>>>(8*b) & 0xFF);
-                out[i*8 + b] = ubt;
+                out[(wrdInd - 1)*8 + b] = ubt;
             }
         }
 

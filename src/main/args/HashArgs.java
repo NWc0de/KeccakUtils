@@ -22,7 +22,7 @@ public class HashArgs {
     @Parameter(names = { "-i", "-input" }, description = "Interpret the following string as file name or raw input (based on mode).", required = true)
     public String inputSource;
 
-    @Parameter(names = { "-cstr", "--customization-str" }, description = "The customization string for cSHAKE.")
+    @Parameter(names = { "-cs", "--customization-str" }, description = "The customization string for cSHAKE.")
     public String cString = "";
 
     @Parameter(names = { "-k", "-key" }, description = "Path to key file.")
@@ -44,8 +44,9 @@ public class HashArgs {
         String help = "Options: \njava KHash \n-op|-operation <KMACXOF256 or cSHAKE256> " +
                 "\n-im|--input-mode <file or string> file -> interpret as URL, string -> read bytes directly " +
                 "\n-i|-input <file path or string> provide the data to be processed " +
-                "\n-cstr|--customization-str <an arbitrary string> the customization string for cSHAKE256 " +
+                "\n-cs|--customization-str <an arbitrary string> the customization string for cSHAKE256 " +
                 "\n-k|-key <URL corresponding to the key file> provides the key for KMACXOF256 " +
+                "\n-l|--bit-length the desired length of the output in bits " +
                 "\n-h|-help displays this help message";
         System.out.println(help);
     }

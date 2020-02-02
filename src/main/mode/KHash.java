@@ -53,6 +53,7 @@ public class KHash {
     private static byte[] processKMAC(HashArgs args) {
         if (args.bitLen % 8 != 0) {
             System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
+            System.exit(1);
         }
         if (args.keyFilePath == null) {
             System.out.println("KMACXOF mode requires a key file.");
@@ -69,6 +70,7 @@ public class KHash {
     private static byte[] processCSHAKE256(HashArgs args) {
         if (args.bitLen % 8 != 0) {
             System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
+            System.exit(1);
         }
         byte[] inBytes = readBytes(args);
 
