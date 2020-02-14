@@ -92,6 +92,20 @@ public class Keccak {
     }
 
     /**
+     * The SHA-3 hash function defined in NIST FIPS 202.
+     * @param in the bytes to compute the digest of
+     * @param bitLen the desired length of the output (must be 224, 256, 384, or 512)
+     * @return the message digest computed via the Keccak[bitLen*2] permutation
+     */
+    public static byte[] SHA3(byte[] in, int bitLen) {
+        if (bitLen != 224 && bitLen != 256 && bitLen != 384 && bitLen != 512)
+            throw new IllegalArgumentException("Supported output bit lengths are 224, 256, 384, and 512.");
+        byte[] uin = Arrays.copyOf(in, in.length + 1);
+        uin[in.length] = 0x06; // pad with suffix defined in FIPS 202 sec. 6.1
+        return sponge(uin, bitLen, bitLen*2);
+    }
+
+    /**
      * The sponge function, produces an output of length bitLen based on the
      * keccakp permutation over in.
      * @param in the input byte array
@@ -128,12 +142,11 @@ public class Keccak {
      * @return the padded byte array
      */
     private static byte[] padTenOne(int rate, byte[] in) {
-        int bitsToPad = rate - in.length*8 % rate;
-        int bytesToPad = (bitsToPad) / 8;
+        int bytesToPad = (rate / 8) - in.length % (rate / 8);
         byte[] padded = new byte[in.length + bytesToPad];
         for (int i = 0; i < in.length + bytesToPad; i++) {
             if (i < in.length) padded[i] = in[i];
-            else if (i==in.length + bytesToPad - 1) padded[i] = (byte) 0x80; // ref table 6 pg. 28 contradicts sec 5.1?
+            else if (i==in.length + bytesToPad - 1) padded[i] = (byte) 0x80; // does not append any domain prefixs
             else padded[i] = 0;
         }
 

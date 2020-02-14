@@ -32,29 +32,38 @@ public class KHash {
             System.exit(1);
         }
 
-        byte[] outBytes = null;
-        if (args.op.contains("KMACXOF256")) {
-            outBytes = processKMAC(args);
-        } else if (args.op.contains("cSHAKE256")) {
-            outBytes = processCSHAKE256(args);
-        } else {
-            System.out.println("Unable to recognize mode of operation");
-            HashArgs.showHelp();
-            System.exit(1);
-        }
+        byte[] outBytes = processInput(args);
 
-        System.out.println("Hash: \n" + bytesToHexString(outBytes).toLowerCase());
+        String tag = args.op + " " + args.bitLen + " bits (" + args.inputSource + "): \n";
+        System.out.println(tag + bytesToHexString(outBytes).toLowerCase());
         if (args.outputFile != null) {
             FileUtilities.writeToFile(outBytes, args.outputFile);
             System.out.println("Output successfully written to " + args.outputFile);
         }
     }
 
-    private static byte[] processKMAC(HashArgs args) {
+    private static byte[] processInput(HashArgs args) {
+        byte[] outBytes = null;
         if (args.bitLen % 8 != 0) {
             System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
             System.exit(1);
         }
+        if (args.op.contains("KMACXOF256")) {
+            outBytes = processKMAC(args);
+        } else if (args.op.contains("cSHAKE256")) {
+            outBytes = Keccak.cSHAKE256(readBytes(args), args.bitLen, "", args.cString);
+        } else if (args.op.contains("SHA3")) {
+            outBytes = Keccak.SHA3(readBytes(args), args.bitLen);
+        } else {
+            System.out.println("Unable to recognize mode of operation");
+            HashArgs.showHelp();
+            System.exit(1);
+        }
+
+        return outBytes;
+    }
+
+    private static byte[] processKMAC(HashArgs args) {
         if (args.keyFilePath == null) {
             System.out.println("KMACXOF mode requires a key file.");
             HashArgs.showHelp();
@@ -65,16 +74,6 @@ public class KHash {
         byte[] keyBytes = FileUtilities.readFile(args.keyFilePath);
 
         return Keccak.KMACXOF256(keyBytes, inBytes, args.bitLen, args.cString);
-    }
-
-    private static byte[] processCSHAKE256(HashArgs args) {
-        if (args.bitLen % 8 != 0) {
-            System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
-            System.exit(1);
-        }
-        byte[] inBytes = readBytes(args);
-
-        return Keccak.cSHAKE256(inBytes, args.bitLen, "", args.cString);
     }
 
     private static byte[] readBytes(HashArgs args) {

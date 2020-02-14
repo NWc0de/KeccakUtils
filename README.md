@@ -1,4 +1,4 @@
-# CryptoToolkit
+# KeccakUtils
 
 The following library provides a range of cryptographic functions (KMACXOF256, SHAKE256, cSHAKE256) as well as several cli utilities built on top of them (hash computation, symmetric encryption). This Keccak implementation is NIST compliant (ref. [FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)), see the unit tests ```KeccakTest.java``` for more details. 
 
