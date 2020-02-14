@@ -6,13 +6,25 @@ The following library provides a range of cryptographic functions (KMACXOF256, S
 The core Keccak functions are implemented in Keccak.java (along with the associated sponge modality). SHAKE256, cSHAKE256, and KMACXOF256 are all made available through this class. The associated set of unit tests, TestKeccak.java, demonstrates compliance with the NIST standard, [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
 
 #### KHash
-The Khash cli utility enables access to cSHAKE256 (and consequently SHAKE256) and KMACXOF256 directly from the command line.
+The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256 (and consequently SHAKE256), and KMACXOF256 directly from the command line.
 
-To compute the hash of a file:
+To compute the SHA3 hash of a file:
+
+```aidl
+java KHASH -im file -i test.txt
+```
+
+SHA3 is the default operation so no 'op' parameter is necessary. The default bit length is 512 bits, but different bit lengths can be specified with the 'l' parameter (input is interpreted as **bit** length but must be a multiple of 8). The command above will compute the SHA3-512 hash of test.txt and display the result to the command line. An equivalent, and explicit, version of the command above is:
+
+```aidl
+java KHASH -op SHA3 -im file -i test.txt -l 512
+```
+
+To compute the hash of a file with cSHAKE256:
 ```aidl
 java KHash -op cSHAKE256 -im file -i test.txt 
 ```
-Running the line above will compute the hash of the provided file and display the result to the command line. The default bit length is 4096 (512 bytes), but different bit lengths can be specified with the -l parameter (input is interpreted as **bit** length but must be a multiple of 8). The -cs parameter allows a customization string to be defined (see NIST SP 800-185 for more details). The default customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
+Running the line above will compute the hash of the provided file and display the result to the command line. The 'cs' parameter allows a customization string to be defined (see NIST SP 800-185 for more details). The default customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
 
 To compute the hash of a raw string:
 ```aidl
