@@ -44,7 +44,7 @@ public class Keccak {
             15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
     };
 
-    private enum ENCODE {Left, Right};
+    private enum ENCODE {Left, Right}
 
     /**
      * The Keccak Message Authentication with extensible output, ref NIST SP 800-185 sec 4.3.1
