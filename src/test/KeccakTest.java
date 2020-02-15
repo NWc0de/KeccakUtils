@@ -2,7 +2,7 @@ package test;
 
 import org.junit.Assert;
 import org.junit.Test;
-import sha3.Keccak;
+import keccak.Keccak;
 
 import java.util.Arrays;
 

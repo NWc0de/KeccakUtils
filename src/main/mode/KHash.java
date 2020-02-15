@@ -8,8 +8,9 @@ package main.mode;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import main.args.HashArgs;
-import sha3.Keccak;
+import keccak.Keccak;
 import util.FileUtilities;
+import util.HexUtilities;
 
 /**
  * The KeccakCli class enabled the user to call various Keccak
@@ -35,7 +36,7 @@ public class KHash {
         byte[] outBytes = processInput(args);
 
         String tag = args.op + " " + args.bitLen + " bits (" + args.inputSource + "): \n";
-        System.out.println(tag + bytesToHexString(outBytes).toLowerCase());
+        System.out.println(tag + HexUtilities.bytesToHexString(outBytes).toLowerCase());
         if (args.outputFile != null) {
             FileUtilities.writeToFile(outBytes, args.outputFile);
             System.out.println("Output successfully written to " + args.outputFile);
@@ -90,21 +91,5 @@ public class KHash {
 
         return outBytes;
     }
-
-    /*
-     * Adapted from https://stackoverflow.com/a/9855338/10808192
-     */
-    private static String bytesToHexString(byte[] in) {
-        char[] hexDigits = "0123456789ABCDEF".toCharArray();
-        char[] charsHex = new char[in.length * 2];
-        for (int i = 0; i < in.length; i++) {
-            int j = in[i] & 0xff;
-            charsHex[i*2] = hexDigits[j>>>4];
-            charsHex[i*2 + 1] = hexDigits[j & 0x0f];
-        }
-
-        return new String(charsHex);
-    }
-
 
 }

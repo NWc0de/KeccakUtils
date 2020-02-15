@@ -3,7 +3,7 @@
 The following library provides a range of cryptographic functions (KMACXOF256, SHAKE256, cSHAKE256) as well as several cli utilities built on top of them (hash computation, symmetric encryption). This Keccak implementation is NIST compliant (ref. [FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)), see the unit tests ```KeccakTest.java``` for more details. 
 
 ## Keccak
-The core Keccak functions are implemented in Keccak.java (along with the associated sponge modality). SHAKE256, cSHAKE256, and KMACXOF256 are all made available through this class. The associated set of unit tests, TestKeccak.java, demonstrates compliance with the NIST standard, [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
+The core Keccak functions are implemented in Keccak.java (along with the associated sponge modality). SHA3, SHAKE256, cSHAKE256, and KMACXOF256 are made available through this class. The associated set of unit tests, TestKeccak.java, demonstrates compliance with the NIST standard, [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
 
 #### KHash
 The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256 (and consequently SHAKE256), and KMACXOF256 directly from the command line.
@@ -71,4 +71,4 @@ The key may be passed as a string during decryption as well:
 java KCipher -d -f enc.txt -pws pass -o dec.txt
 ```
 
-The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written and a warning is presented. This behavior can be disabled with the -i tag, however this is not advisable. If authentication is disabled, the user will still be informed as to whether the computed authentication tag matches the one in the file provided, but no action will be taken. 
+The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i tag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will always be written to disk.

@@ -4,7 +4,7 @@
  * Date: 01/22/2020
  */
 
-package sha3;
+package keccak;
 
 import java.util.Arrays;
 

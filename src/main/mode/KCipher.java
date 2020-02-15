@@ -9,7 +9,7 @@ package main.mode;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import main.args.CipherArgs;
-import sha3.Keccak;
+import keccak.Keccak;
 import util.FileUtilities;
 
 import java.security.SecureRandom;
