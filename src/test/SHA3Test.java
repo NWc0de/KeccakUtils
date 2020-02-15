@@ -12,11 +12,11 @@ import util.HexUtilities;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
 
 /**
- * A set of unit tests covering SHA3. Test vectors retrieved from
+ * A set of unit tests covering SHA3. Test vectors follow
+ * the format of NIST Cryptographic Validation Program, see
  * https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing#Testing
  */
 public class SHA3Test {
