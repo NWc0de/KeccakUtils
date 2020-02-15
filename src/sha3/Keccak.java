@@ -87,7 +87,8 @@ public class Keccak {
      */
     public static byte[] SHAKE256(byte[] in, int bitLen) {
         byte[] uin = Arrays.copyOf(in, in.length + 1);
-        uin[in.length] = 0x1f; // pad with suffix defined in FIPS 202 sec. 6.2
+        int bytesToPad = 136 - in.length % (136); // rate is 136 bytes
+        uin[in.length] = bytesToPad == 1 ? (byte) 0x9f : 0x1f; // pad with suffix defined in FIPS 202 sec. 6.2
         return sponge(uin, bitLen, 512);
     }
 
@@ -101,7 +102,8 @@ public class Keccak {
         if (bitLen != 224 && bitLen != 256 && bitLen != 384 && bitLen != 512)
             throw new IllegalArgumentException("Supported output bit lengths are 224, 256, 384, and 512.");
         byte[] uin = Arrays.copyOf(in, in.length + 1);
-        uin[in.length] = 0x06; // pad with suffix defined in FIPS 202 sec. 6.1
+        int bytesToPad = (1600 - bitLen*2) / 8 - in.length % (1600 - bitLen*2);
+        uin[in.length] = bytesToPad == 1 ? (byte) 0x86 : 0x06; // pad with suffix defined in FIPS 202 sec. 6.1
         return sponge(uin, bitLen, bitLen*2);
     }
 
@@ -115,7 +117,7 @@ public class Keccak {
      */
     private static byte[] sponge(byte[] in, int bitLen, int cap) {
         int rate = 1600 - cap;
-        byte[] padded = padTenOne(rate, in);
+        byte[] padded = in.length % (rate / 8) == 0 ? in : padTenOne(rate, in); // one bit of padding already appended
         long[][] states = byteArrayToStates(padded, cap);
         long[] stcml = new long[25];
         for (long[] st : states) {
