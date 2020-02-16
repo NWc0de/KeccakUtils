@@ -47,15 +47,17 @@ public class SHAKETest {
     public void testMonteCarloSHAKE256() {
         readMonteFile("res/shakebytetestvectors/SHAKE256Monte.rsp");
         byte[] msg = seed;
-        int outLen = MAX_BYTES, range = (MAX_BYTES - MIN_BYTES + 1);
+        int outBitLen = MAX_BYTES * 8, range = (MAX_BYTES - MIN_BYTES + 1);
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 1000; j++) {
+                //System.out.println("msg length: " + msg.length);
                 msg = Arrays.copyOf(msg, 16);
-                msg = Keccak.SHAKE256(msg, outLen);
+                msg = Keccak.SHAKE256(msg, outBitLen);
                 int rmb = msg[msg.length - 2]<<8 | msg[msg.length - 1];
-                if (rmb < 0) rmb = ~rmb + 1;
-                System.out.println(rmb);
-                outLen = MIN_BYTES + (rmb % range);
+                //if (rmb < 0) rmb = ~rmb + 1;
+                System.out.println("rmb: " + rmb);
+                outBitLen = MIN_BYTES + (rmb % range);
+                System.out.println("outBitLen: " + outBitLen*8 + "\n");
             }
             Assert.assertArrayEquals(hash.get(i), msg);
         }
@@ -99,7 +101,7 @@ public class SHAKETest {
 
                 if (procd++ < 9 || line.equals("") || line.charAt(0) == '#') continue;
                 if (line.contains("Msg")) seed = HexUtilities.hexStringToBytes(line.split(" ")[2]);
-                if (line.contains("Output")) hash.add(HexUtilities.hexStringToBytes(line.split(" ")[2]));
+                if (line.contains("Output =")) hash.add(HexUtilities.hexStringToBytes(line.split(" ")[2]));
             }
         } catch (FileNotFoundException fne) {
             System.out.println("Unable to locate file " + url);
