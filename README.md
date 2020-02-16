@@ -1,20 +1,19 @@
 # KeccakUtils
 
-The following library provides a range of cryptographic functions (KMACXOF256, SHAKE256, cSHAKE256) as well as several cli utilities built on top of them (hash computation, symmetric encryption). This Keccak implementation is NIST compliant (ref. [FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)), see the unit tests ```KeccakTest.java``` for more details. 
+Keccak utils provides a range of cryptographic functions (SHA3/cSHAKE256 hash computation, symmetric encryption via KMACXOF256 duplexed sponge, and ECDHIES key generation and signing) built on top of a rigorously tested NIST compliant Keccak implementation. Compliance testing was done in the style of NIST's Cryptographic Validation Program using the suite of test vectors they have made [available](https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing).
 
 ## Keccak
-The core Keccak functions are implemented in Keccak.java (along with the associated sponge modality). SHA3, SHAKE256, cSHAKE256, and KMACXOF256 are made available through this class. The associated set of unit tests, TestKeccak.java, demonstrates compliance with the NIST standard, [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
+The core Keccak functions are implemented in Keccak.java (along with the associated sponge modality). SHA3, SHAKE256, cSHAKE256, and KMACXOF256 are made available through this class. The associated set of unit tests, ```SHA3Test.java``` and ```SHAKETest.java```, demonstrate compliance with the NIST standard, [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
 
 #### KHash
-The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256 (and consequently SHAKE256), and KMACXOF256 directly from the command line.
+The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256, and KMACXOF256 directly from the command line.
 
 To compute the SHA3 hash of a file:
 
 ```aidl
 java KHASH -im file -i test.txt
 ```
-
-SHA3 is the default operation so no 'op' parameter is necessary. The default bit length is 512 bits, but different bit lengths can be specified with the 'l' parameter (input is interpreted as **bit** length but must be a multiple of 8). The command above will compute the SHA3-512 hash of test.txt and display the result to the command line. An equivalent, and explicit, version of the command above is:
+The command above will compute the SHA3-512 hash of the ```test.txt``` file and display the output to the console. In the absence of an 'op' parameter SHA3 is implied. Variable output lengths can be specified with the 'l' parameter (interpreted as bit length), although with SHA3 output bit lengths are restricted to 224, 256, 384, 512. The command above is equivalent to:
 
 ```aidl
 java KHASH -op SHA3 -im file -i test.txt -l 512
@@ -24,9 +23,16 @@ To compute the hash of a file with cSHAKE256:
 ```aidl
 java KHash -op cSHAKE256 -im file -i test.txt 
 ```
-Running the line above will compute the hash of the provided file and display the result to the command line. The 'cs' parameter allows a customization string to be defined (see NIST SP 800-185 for more details). The default customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
+Executing KHash with the cSHAKE256 parameter will compute the cSHAKE256 hash of the provided input and display the digest to the command line. The 'cs' parameter allows a customization string to be defined (see NIST SP 800-185 for more details). By default the customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
 
-To compute the hash of a raw string:
+To compute the hash of ```test.txt``` under customization string 'test':
+```aidl
+java KHash -op cSHAKE256 -cs test -im file -i test.txt 
+```
+
+There are two available input modes, both of which are specified with the 'im' flag. The 'file' input mode interprets the input, denoted by the 'i' parameter, as a url while the 'string' input mode interprets input as raw data (the text of the parameter is translated directory to bytes). 
+
+To compute the hash of the raw string 'test':
 ```aidl
 java KHash -op cSHAKE256 -im string -i test
 ``` 
@@ -43,12 +49,13 @@ To compute the hash of a raw string with KMACXOF256:
 java KHASH -op KMACXOF256 -im string -i test -k keyfile
 ```
 
-A key is required for KMACXOF256. 
-
-In either mode output may be saved to a file with the -w flag. 
+In either mode output may be saved to a file with the -w flag:
+```aidl
+java KHASH -op KMACXOF256 -w hashbytes -im file -i test.txt -k keyfile
+```
 
 ## KCipher
-KCipher is a cli utility that provides authenticated symmetric encryption services based on the Keccak machinery (KMACXOF256). Encryption is performed under a user provided password. 
+KCipher is a cli utility that provides authenticated symmetric encryption services based a duplexed KMACXOF256 sponge scheme. Encryption is performed under a user provided password. 
 
 To encrypt a file under the password, 'pass':
 ```aidl
@@ -71,4 +78,4 @@ The key may be passed as a string during decryption as well:
 java KCipher -d -f enc.txt -pws pass -o dec.txt
 ```
 
-The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i tag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will always be written to disk.
+The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i tag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.

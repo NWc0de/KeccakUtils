@@ -146,6 +146,10 @@ public class KCipher {
         }
     }
 
+    /*
+     * A wrapper to allowing passing of data as well as boolean
+     * indicated it's validation status.
+     */
     private static class DecryptedData {
         boolean isValid;
         byte[] data;
