@@ -43,21 +43,23 @@ public class SHAKETest {
         }
     }
 
+    /**
+     * Performs the Monte Carlo test for SHAKE256, see
+     * https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha3vs.pdf
+     * figure 2 for details.
+     */
     @Test
     public void testMonteCarloSHAKE256() {
         readMonteFile("res/shakebytetestvectors/SHAKE256Monte.rsp");
         byte[] msg = seed;
-        int outBitLen = MAX_BYTES * 8, range = (MAX_BYTES - MIN_BYTES + 1);
+        int outBitLen = MAX_BYTES, range = (MAX_BYTES - MIN_BYTES + 1);
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 1000; j++) {
-                //System.out.println("msg length: " + msg.length);
                 msg = Arrays.copyOf(msg, 16);
-                msg = Keccak.SHAKE256(msg, outBitLen);
-                int rmb = msg[msg.length - 2]<<8 | msg[msg.length - 1];
-                //if (rmb < 0) rmb = ~rmb + 1;
-                System.out.println("rmb: " + rmb);
+                msg = Keccak.SHAKE256(msg, outBitLen * 8);
+                System.out.println("msg len: " + msg.length);
+                int rmb = ((msg[msg.length - 2]<<8) & 0xff00) | (msg[msg.length - 1] & 0xff);
                 outBitLen = MIN_BYTES + (rmb % range);
-                System.out.println("outBitLen: " + outBitLen*8 + "\n");
             }
             Assert.assertArrayEquals(hash.get(i), msg);
         }
