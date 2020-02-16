@@ -22,12 +22,13 @@ import java.util.Scanner;
  */
 public class SHAKETest {
 
-    /** The minimum and maximum byte length of the output for the variable length test vectors */
+    /** The minimum and maximum byte length of the output for the variable length test vectors. */
     private final int MIN_BYTES = 2;
     private final int MAX_BYTES = 250;
-    /** Byte arrays to hold the NIST test vectors after being read from a file. */
+    /** Containers for the NIST test vectors. */
     private ArrayList<byte[]> msg = new ArrayList<>();
     private ArrayList<byte[]> hash = new ArrayList<>();
+    private ArrayList<Integer> hashLens = new ArrayList<>();
     private byte[] seed;
 
     @Test
@@ -43,10 +44,8 @@ public class SHAKETest {
         }
     }
 
-    /**
-     * Performs the Monte Carlo test for SHAKE256, see
+    /* Monte carlo test, see figure 2 in the linked doc for details
      * https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha3vs.pdf
-     * figure 2 for details.
      */
     @Test
     public void testMonteCarloSHAKE256() {
@@ -55,13 +54,20 @@ public class SHAKETest {
         int outBitLen = MAX_BYTES, range = (MAX_BYTES - MIN_BYTES + 1);
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 1000; j++) {
-                msg = Arrays.copyOf(msg, 16);
+                msg = Arrays.copyOf(msg, 16); // last 128 bits of previous output
                 msg = Keccak.SHAKE256(msg, outBitLen * 8);
-                System.out.println("msg len: " + msg.length);
-                int rmb = ((msg[msg.length - 2]<<8) & 0xff00) | (msg[msg.length - 1] & 0xff);
+                int rmb = ((msg[msg.length - 2]<<8) & 0xff00) | (msg[msg.length - 1] & 0xff); // 16 right most bits as int
                 outBitLen = MIN_BYTES + (rmb % range);
             }
             Assert.assertArrayEquals(hash.get(i), msg);
+        }
+    }
+
+    @Test
+    public void testVariableOutSHAKE256() {
+        readVarLenMsgFile("res/shakebytetestvectors/SHAKE256VariableOut.rsp");
+        for (int i = 0; i < msg.size(); i++) {
+            Assert.assertArrayEquals(hash.get(i), Keccak.SHAKE256(msg.get(i), hashLens.get(i)));
         }
     }
 
@@ -71,8 +77,7 @@ public class SHAKETest {
      * SHA3(msg[i]) = hash[i]
      */
     private void readMsgFile(String url) {
-        msg.clear();
-        hash.clear();
+        msg.clear(); hash.clear();
         try {
             Scanner in = new Scanner(new File(url));
             while (in.hasNextLine()) {
@@ -107,6 +112,29 @@ public class SHAKETest {
             }
         } catch (FileNotFoundException fne) {
             System.out.println("Unable to locate file " + url);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Reads a variable output length .rsp file.
+     */
+    private void readVarLenMsgFile(String url) {
+        msg.clear(); hash.clear(); hashLens.clear();
+        try {
+            Scanner in = new Scanner(new File(url));
+            while (in.hasNextLine()) {
+                String line = in.nextLine();
+                if (line.contains("]") || line.equals("") || line.charAt(0) == '#') continue;
+                if (line.contains("Msg")) msg.add(HexUtilities.hexStringToBytes(line.split(" ")[2]));
+                if (line.contains("Output =")) hash.add(HexUtilities.hexStringToBytes(line.split(" ")[2]));
+                if (line.contains("Outputlen")) hashLens.add(Integer.parseInt(line.split(" ")[2]));
+            }
+        } catch (FileNotFoundException fne) {
+            System.out.println("Unable to locate file " + url);
+            System.exit(1);
+        } catch (NumberFormatException nfe) {
+            System.out.println("Error occured while processing file " + url);
             System.exit(1);
         }
     }
