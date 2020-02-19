@@ -10,6 +10,7 @@ import com.beust.jcommander.Parameter;
 /**
  * Defines the cli args for the KCipher
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class CipherArgs {
 

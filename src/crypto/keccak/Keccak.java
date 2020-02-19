@@ -4,13 +4,14 @@
  * Date: 01/22/2020
  */
 
-package keccak;
+package crypto.keccak;
 
 import java.util.Arrays;
 
 /**
  * Implements the Keccak-p function and associated sponge modality.
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class Keccak {
 

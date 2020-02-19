@@ -8,7 +8,7 @@ package main.mode;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import main.args.HashArgs;
-import keccak.Keccak;
+import crypto.keccak.Keccak;
 import util.FileUtilities;
 import util.HexUtilities;
 
@@ -16,6 +16,7 @@ import util.HexUtilities;
  * The KeccakCli class enabled the user to call various Keccak
  * derived functions for the command line.
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class KHash {
 

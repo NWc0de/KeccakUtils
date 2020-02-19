@@ -4,7 +4,7 @@
 
 package test;
 
-import keccak.Keccak;
+import crypto.keccak.Keccak;
 import org.junit.Assert;
 import org.junit.Test;
 import util.HexUtilities;
@@ -20,7 +20,7 @@ import java.util.Scanner;
  * follow the format of NIST Cryptographic Validation Program, see
  * https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing#Testing
  */
-public class SHAKETest {
+public class SHAKETests {
 
     /** The minimum and maximum byte length of the output for the variable length test vectors. */
     private final int MIN_BYTES = 2;

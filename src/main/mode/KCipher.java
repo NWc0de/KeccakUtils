@@ -9,7 +9,7 @@ package main.mode;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import main.args.CipherArgs;
-import keccak.Keccak;
+import crypto.keccak.Keccak;
 import util.FileUtilities;
 
 import java.security.SecureRandom;
@@ -18,6 +18,7 @@ import java.util.Arrays;
 /**
  * Implements a symmetric cipher based on the Keccak functions
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class KCipher {
 

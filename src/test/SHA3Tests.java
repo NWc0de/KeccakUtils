@@ -4,7 +4,7 @@
 
 package test;
 
-import keccak.Keccak;
+import crypto.keccak.Keccak;
 import org.junit.Assert;
 import org.junit.Test;
 import util.HexUtilities;
@@ -19,7 +19,7 @@ import java.util.Scanner;
  * the format of NIST Cryptographic Validation Program, see
  * https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing#Testing
  */
-public class SHA3Test {
+public class SHA3Tests {
 
     /** Byte arrays to hold the NIST test vectors after being read from a file. */
     private ArrayList<byte[]> msg = new ArrayList<>();

@@ -1,20 +1,25 @@
 /*
- * Facilitates the processing of hex input and output.
+ * Allows strings of ASCII characters representing hex values to be translated
+ * to byte arrays and vice versa.
  */
 
 package util;
 
 /**
- * Encapsulates several utitlities for translating ASCII hex strings to byte arrays
- * vice versa.
+ * Provides several utility method for translating ASCII hex strings
+ * to byte arrays vice versa.
+ * @author Spencer Little
+ * @version 1.0.0
  */
 public class HexUtilities {
 
-    /*
+    /**
+     * Returns a hexadecimal representation of the byte array in
+     * String form.
      * Adapted from https://stackoverflow.com/a/9855338/10808192
      */
     public static String bytesToHexString(byte[] in) {
-        char[] hexDigits = "0123456789ABCDEF".toCharArray();
+        char[] hexDigits = "0123456789abcdef".toCharArray();
         char[] charsHex = new char[in.length * 2];
         for (int i = 0; i < in.length; i++) {
             int j = in[i] & 0xff;

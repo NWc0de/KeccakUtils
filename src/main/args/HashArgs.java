@@ -10,6 +10,7 @@ import com.beust.jcommander.Parameter;
 /**
  * Defines the cli arguments for KHash.
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class HashArgs {
 

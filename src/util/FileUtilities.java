@@ -13,6 +13,7 @@ import java.io.IOException;
 /**
  * Provides basic reading/writing of byte arrays
  * @author Spencer Little
+ * @version 1.0.0
  */
 public class FileUtilities {
 
