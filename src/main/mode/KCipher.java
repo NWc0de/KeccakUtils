@@ -40,30 +40,30 @@ public class KCipher {
         byte[] outBytes = null;
         boolean chkSumValid = false;
         if (args.encrypt && args.pwdFile != null) {
-            outBytes = keccakEncrypt(FileUtilities.readFile(args.pwdFile), FileUtilities.readFile(args.inputURL));
+            outBytes = keccakEncrypt(FileUtilities.readFileBytes(args.pwdFile), FileUtilities.readFileBytes(args.inputURL));
         } else if (args.encrypt) {
-            outBytes = keccakEncrypt(args.pwdStr.getBytes(), FileUtilities.readFile(args.inputURL));
+            outBytes = keccakEncrypt(args.pwdStr.getBytes(), FileUtilities.readFileBytes(args.inputURL));
         } else if (args.decrypt && args.pwdFile != null) {
-            DecryptedData out = keccakDecrypt(FileUtilities.readFile(args.pwdFile), FileUtilities.readFile(args.inputURL));
+            DecryptedData out = keccakDecrypt(FileUtilities.readFileBytes(args.pwdFile), FileUtilities.readFileBytes(args.inputURL));
             chkSumValid = out.isValid();
             outBytes = out.getBytes();
         } else {
-            DecryptedData out = keccakDecrypt(args.pwdStr.getBytes(), FileUtilities.readFile(args.inputURL));
+            DecryptedData out = keccakDecrypt(args.pwdStr.getBytes(), FileUtilities.readFileBytes(args.inputURL));
             chkSumValid = out.isValid();
             outBytes = out.getBytes();
         }
 
         if (args.encrypt) {
-            FileUtilities.writeToFile(outBytes, args.outputURL);
+            FileUtilities.writeBytesToFile(outBytes, args.outputURL);
             System.out.println("Successfully wrote encrypted file to url: " + args.outputURL);
         } else if (args.ignoreTag) {
-            FileUtilities.writeToFile(outBytes, args.outputURL);
+            FileUtilities.writeBytesToFile(outBytes, args.outputURL);
             System.out.println("Successfully wrote encrypted file to url: " + args.outputURL);
             System.out.println("Checksum valid: " + chkSumValid);
         } else if (!chkSumValid) {
             System.out.println("Warning: Checksum computed did not match checksum transmitted. No data was written to disk.");
         } else {
-            FileUtilities.writeToFile(outBytes, args.outputURL);
+            FileUtilities.writeBytesToFile(outBytes, args.outputURL);
             System.out.println("Successfully wrote encrypted file to url: " + args.outputURL);
             System.out.println("Checksum OK.");
         }
@@ -75,7 +75,7 @@ public class KCipher {
      * Encrypts a byte array under pwd
      * @return a byte array - (initVector || encrypted data || tag (MAC))
      */
-    private static byte[] keccakEncrypt(byte[] pwd, byte[] in) {
+    public static byte[] keccakEncrypt(byte[] pwd, byte[] in) {
         SecureRandom gen = new SecureRandom();
         byte[] rnd = new byte[64];
         gen.nextBytes(rnd);
@@ -95,7 +95,7 @@ public class KCipher {
      * Decrypts a cryptogram under pwd based on the protocl described in keccakEncrypt
      * @return a DecryptedData object containing the decrypted data and a validity flag (transmitted tag == computed tag)
      */
-    private static DecryptedData keccakDecrypt(byte[] pwd, byte[] enc) {
+    public static DecryptedData keccakDecrypt(byte[] pwd, byte[] enc) {
         byte[] rnd = Arrays.copyOfRange(enc, 0, 64);
         byte[] msg = Arrays.copyOfRange(enc, 64, enc.length - 64);
         byte[] tag = Arrays.copyOfRange(enc, enc.length - 64, enc.length);
@@ -151,7 +151,7 @@ public class KCipher {
      * A wrapper to allowing passing of data as well as boolean
      * indicated it's validation status.
      */
-    private static class DecryptedData {
+    public static class DecryptedData {
         boolean isValid;
         byte[] data;
 

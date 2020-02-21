@@ -39,7 +39,7 @@ public class KHash {
         String tag = args.op + " " + args.bitLen + " bits (" + args.inputSource + "): \n";
         System.out.println(tag + HexUtilities.bytesToHexString(outBytes).toLowerCase());
         if (args.outputFile != null) {
-            FileUtilities.writeToFile(outBytes, args.outputFile);
+            FileUtilities.writeBytesToFile(outBytes, args.outputFile);
             System.out.println("Output successfully written to " + args.outputFile);
         }
     }
@@ -73,7 +73,7 @@ public class KHash {
         }
 
         byte[] inBytes = readBytes(args);
-        byte[] keyBytes = FileUtilities.readFile(args.keyFilePath);
+        byte[] keyBytes = FileUtilities.readFileBytes(args.keyFilePath);
 
         return Keccak.KMACXOF256(keyBytes, inBytes, args.bitLen, args.cString);
     }
@@ -81,7 +81,7 @@ public class KHash {
     private static byte[] readBytes(HashArgs args) {
         byte[] outBytes = null;
         if (args.inputMode.equals("file")) {
-            outBytes = FileUtilities.readFile(args.inputSource);
+            outBytes = FileUtilities.readFileBytes(args.inputSource);
         } else if (args.inputMode.equals("string")) {
             outBytes = args.inputSource.getBytes();
         } else {
