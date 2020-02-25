@@ -18,6 +18,8 @@ import java.math.BigInteger;
  */
 public class CurvePoint implements Serializable {
 
+    /** The neutral element of the curve. */
+    public static final CurvePoint ZERO = new CurvePoint(BigInteger.ZERO, BigInteger.ONE);
     /** The quantity used for modular reduction, a Mersenne prime. */
     private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
     /** The quantity used to define the equation of E_521. */
@@ -31,8 +33,7 @@ public class CurvePoint implements Serializable {
      * @param y the y coordinate of the point to initialize
      */
     public CurvePoint(BigInteger x, BigInteger y) {
-        //TODO: validation tests are failing during addition
-        //if (!isValidPair(x, y)) throw new IllegalArgumentException("The provided x, y pair is not a point on E_521");
+        if (!isValidPair(x, y)) throw new IllegalArgumentException("The provided x, y pair is not a point on E_521");
         this.x = x;
         this.y = y;
     }
@@ -79,6 +80,36 @@ public class CurvePoint implements Serializable {
     }
 
     /**
+     * Adds this and op and returns the result. Addition is based on the formula:
+     * x = ((x_1 * y_2 + y_2 * x_2) / (1 + d * x_1 * x_2 * y_1 * y_2)) mod p
+     * y = ((y_1 * y_2 - x_1 * x_2) / (1 - d * x_1 * x_2 * y_1 * y_2)) mod p
+     * @param op the point to be added
+     * @return this + op (based on the formula described above)
+     */
+    public CurvePoint add(CurvePoint op) {
+        BigInteger xy  = x.multiply(op.x).multiply(y.multiply(op.y)); // x_1 * x_2 * y_1 * y_2
+
+        BigInteger a = x.multiply(op.y).add(y.multiply(op.x)).mod(P); // a = (x_1 * y_2 + y_1 * x_2) mod p
+        BigInteger b = BigInteger.ONE.add(D.multiply(xy)).mod(P); // b = (1 + d * x_1 * x_2 * y_1 * y_2)) mod p
+        BigInteger c = a.multiply(b.modInverse(P)).mod(P); // x = (a / b) mod p
+
+        a = y.multiply(op.y).subtract(x.multiply(op.x)).mod(P); // a = (y_1 * y_2 - x_1 * x_2) mod p
+        b = BigInteger.ONE.subtract(D.multiply(xy)).mod(P); // b = (1 - d * x_1 * x_2 * y_1 * y_2)) mod p
+        BigInteger d = a.multiply(b.modInverse(P)).mod(P); // d = (a / b) mod p
+        
+        return new CurvePoint(c, d);
+    }
+
+    /**
+     * Returns a string representation of this CurvePoint.
+     * @return A string describing the point, (this.x, this.y)
+     */
+    @Override
+    public String toString() {
+        return "(" + this.x.toString() + ", " + this.y.toString() + ")";
+    }
+
+    /**
      * Tests two points for equality by comparing their x and y values.
      * @param o the other point to compare against this
      * @return a boolean indicating whether this == o
@@ -100,27 +131,6 @@ public class CurvePoint implements Serializable {
     @Override
     public CurvePoint clone() {
         return new CurvePoint(this.x, this.y);
-    }
-
-    /**
-     * Adds this and op and returns the result. Addition is based on the formula:
-     * x = ((x_1 * y_2 + y_2 * x_2) / (1 + d * x_1 * x_2 * y_1 * y_2)) mod p
-     * y = ((y_1 * y_2 - x_1 * x_2) / (1 - d * x_1 * x_2 * y_1 * y_2)) mod p
-     * @param op the point to be added
-     * @return this + op (based on the formula described above)
-     */
-    private CurvePoint add(CurvePoint op) {
-        BigInteger xy  = x.multiply(op.x).multiply(y.multiply(op.y)); // x_1 * x_2 * y_1 * y_2
-
-        BigInteger a = x.multiply(op.y).add(y.multiply(op.x)).mod(P); // a = (x_1 * y_2 + y_2 * x_2) mod p
-        BigInteger b = BigInteger.ONE.add(D.multiply(xy)).mod(P); // b = (1 + d * x_1 * x_2 * y_1 * y_2)) mod p
-        BigInteger x = a.multiply(b.modInverse(P)).mod(P); // x = (a / b) mod p
-
-        a = y.multiply(op.y).subtract(x.multiply(op.x)).mod(P); // a = (y_1 * y_2 - x_1 * x_2) mod p
-        b = BigInteger.ONE.subtract(D.multiply(xy)).mod(P); // b = (1 - d * x_1 * x_2 * y_1 * y_2)) mod p
-        BigInteger y = a.multiply(b.modInverse(P)).mod(P); // y = (a / b) mod p
-
-        return new CurvePoint(x, y);
     }
 
     /**
@@ -150,8 +160,17 @@ public class CurvePoint implements Serializable {
      * @return a boolean flag indicating whether the provided (x, y) pair is a point on E_521
      */
     private boolean isValidPair(BigInteger x, BigInteger y) {
-        BigInteger l = x.pow(2).add(y.pow(2)).mod(P); // (x^2 + y^2) mod p
-        BigInteger r = BigInteger.ONE.add(D.multiply(x.pow(2).multiply(y.pow(2)))).mod(P); // (1 + d * x^2 * y^2) mod p
+        BigInteger l, r;
+
+        // BigInteger throws exception when computing 1 % p
+        if (x.equals(BigInteger.ZERO) && y.equals(BigInteger.ONE)) {
+            r = BigInteger.ONE; // (1 + d * 0 * y^z) = 1
+            l = BigInteger.ONE; // (0 + 1) = 1
+        }
+        else {
+            l = x.pow(2).add(y.pow(2)).mod(P); // (x^2 + y^2) mod p
+            r = BigInteger.ONE.add(D.multiply(x.pow(2).multiply(y.pow(2)))).mod(P); // (1 + d * x^2 * y^2) mod p
+        }
         return l.equals(r);
     }
 }

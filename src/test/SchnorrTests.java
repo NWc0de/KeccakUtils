@@ -9,6 +9,9 @@ import crypto.schnorr.ECKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.math.BigInteger;
+import java.util.Random;
+
 /**
  * A set of unit tests that cover the key generation/storage, asymmetric
  * encryption and signing functions of the Schnorr/ECDHIES classes.
@@ -32,5 +35,30 @@ public class SchnorrTests {
 
         Assert.assertEquals(recKey, origKey);
         Assert.assertEquals(recPub, origKey.getPublicCurvePoint());
+    }
+
+    /**
+     * Tests curve point generation and arithmetic.
+     */
+    @Test
+    public void testCurvePointArithmetic() {
+        // G + -G = 0
+        Assert.assertEquals(CurvePoint.negate(ECKeyPair.G).add(ECKeyPair.G), CurvePoint.ZERO);
+        // G + 0 = G
+        Assert.assertEquals(ECKeyPair.G.add(CurvePoint.ZERO), ECKeyPair.G);
+        // Perform the same tests for 100 randomly generated points
+        for (int i = 0; i < 100; i++) {
+            Random gen = new Random();
+            BigInteger x = BigInteger.valueOf(gen.nextLong());
+            CurvePoint p;
+            try {
+                p = new CurvePoint(x, gen.nextBoolean());
+            } catch (IllegalArgumentException iax) {
+                continue;
+            }
+            Assert.assertEquals(CurvePoint.negate(p).add(p), CurvePoint.ZERO);
+            // addition is mod p so initially negative x's will have different, but equivalent mod p, values
+            if (x.signum() >= 0) Assert.assertEquals(p.add(CurvePoint.ZERO), p);
+        }
     }
 }
