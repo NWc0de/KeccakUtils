@@ -6,6 +6,7 @@ package crypto.schnorr;
 
 import crypto.keccak.Keccak;
 import main.mode.KCipher;
+import util.DecryptedData;
 import util.FileUtilities;
 
 import java.math.BigInteger;
@@ -28,8 +29,6 @@ public class ECKeyPair {
     private final byte[] prv;
     /** The scalar derived from the secret key. */
     private final BigInteger prvScalar;
-    /** The password the user provided. */
-    private final byte[] pwd;
 
     /**
      * Generates a new key pair with the provided byte array as the
@@ -38,16 +37,27 @@ public class ECKeyPair {
      * @param pwd the password used to derive the secret key
      */
     public ECKeyPair(byte[] pwd) {
-        this.pwd = pwd;
         prv = Keccak.KMACXOF256(pwd, new byte[] {}, 512, "K");
         BigInteger s = new BigInteger(prv);
-        prvScalar = s.multiply(BigInteger.valueOf(4));
+        prvScalar = s.multiply(BigInteger.valueOf(4L));
         pub = G.scalarMultiply(s);
     }
 
     /**
+     * Constructs a new key pair with the provided private key. Enables
+     * a private key to be read from a file instead of created directly with
+     * password.
+     * @param pvk the private key in the form of a big integer
+     */
+    public ECKeyPair(BigInteger pvk) {
+        prv = pvk.toByteArray();
+        prvScalar = pvk.multiply(BigInteger.valueOf(4L));
+        pub = G.scalarMultiply(pvk);
+    }
+
+    /**
      * Generates a new key pair with the provided String, interpreted
-     * as bytes, as the password.
+     * as bytes in the systems charset, as the password.
      * @param pwd the password used to derive the secret key.
      */
     public ECKeyPair(String pwd) {
@@ -72,38 +82,25 @@ public class ECKeyPair {
      * @return a CurvePoint, pub, completing the public key pair (pub, G)
      */
     public static CurvePoint readPubKeyFile(String url) {
-        Object pub = FileUtilities.readObjectFromFile(url);
-        if (pub.getClass() != CurvePoint.class)
-            throw new IllegalStateException("Error occurred during deserialization. Key file may be corrupted.");
-        return (CurvePoint) pub;
+        return CurvePoint.fromByteArray(FileUtilities.readFileBytes(url));
     }
 
     /**
-     * Reads the specifid private key file and returns a new ECKeyPair with
+     * Reads the specified private key file and returns a new ECKeyPair with
      * that private key and it's corresponding public key.
      * @param url the url of the file containing the serialized private key
      * @param pwd the password under which the private key was initialized generated
      * @return a new ECKeyPair object containing the private key of the file
      */
     public static ECKeyPair readPrivateKeyFile(String url, byte[] pwd) {
-        KCipher.DecryptedData prvBytes = KCipher.keccakDecrypt(pwd, FileUtilities.readFileBytes(url));
+        DecryptedData prvBytes = KCipher.keccakDecrypt(pwd, FileUtilities.readFileBytes(url));
         if (!prvBytes.isValid()) {
             System.out.println("Authentication of encrypted private key was unsuccessful.");
             System.out.println("Stored key may be corrupted, perhaps use the password to reinitialize?");
             System.exit(1);
         }
 
-        ECKeyPair genKey = new ECKeyPair(pwd); //TODO: what's the point of storing the private key?
-        BigInteger readScalar = new BigInteger(prvBytes.getBytes());
-        readScalar = readScalar.multiply(BigInteger.valueOf(4));
-
-        if (!genKey.getPrivateScalar().equals(readScalar)) {
-            System.out.print("The private key stored at the provided url does not match ");
-            System.out.print("the password provided. No key can be generated");
-            System.exit(1);
-        }
-
-        return genKey;
+        return new ECKeyPair(new BigInteger(prvBytes.getBytes()));
     }
 
     /**
@@ -119,16 +116,25 @@ public class ECKeyPair {
      * @param url the desired file name
      */
     public void writePubToFile(String url) {
-        FileUtilities.writeObjectToFile(pub, url);
+        FileUtilities.writeBytesToFile(pub.toByteArray(), url);
     }
 
     /**
-     * Writes the private key to file, then encrypts under the password
+     * Encrypts the private key under the provided password, then
+     * writes it to the specificied url.
      * provided during initialization.
      * @param url the desired file name
      */
-    public void writePrvToEncFile(String url) {
-        FileUtilities.writeBytesToFile(KCipher.keccakEncrypt(pwd, prv), url);
+    public void writePrvToEncFile(String url, byte[] upwd) {
+        FileUtilities.writeBytesToFile(KCipher.keccakEncrypt(upwd, prv), url);
+    }
+
+    /**
+     * Interprets the provided string as a byte array which is used
+     * as the password for writing the private key to the specified url.
+     */
+    public void writePrvToEncFile(String url, String pwd) {
+        writePrvToEncFile(url, pwd.getBytes());
     }
 
     /**
@@ -145,9 +151,7 @@ public class ECKeyPair {
 
         ECKeyPair ok = (ECKeyPair) o;
 
-        return Arrays.equals(prv, ok.prv)
-                && Arrays.equals(pwd, ok.pwd)
-                && pub.equals(ok.pub);
+        return Arrays.equals(prv, ok.prv) && pub.equals(ok.pub);
 
     }
 }

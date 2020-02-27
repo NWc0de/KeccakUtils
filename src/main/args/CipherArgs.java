@@ -8,7 +8,7 @@ package main.args;
 import com.beust.jcommander.Parameter;
 
 /**
- * Defines the cli args for the KCipher
+ * Defines the cli args for the KCipher.
  * @author Spencer Little
  * @version 1.0.0
  */

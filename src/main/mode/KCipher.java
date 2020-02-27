@@ -10,6 +10,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import main.args.CipherArgs;
 import crypto.keccak.Keccak;
+import util.ArrayUtilities;
+import util.DecryptedData;
 import util.FileUtilities;
 
 import java.security.SecureRandom;
@@ -80,15 +82,15 @@ public class KCipher {
         byte[] rnd = new byte[64];
         gen.nextBytes(rnd);
 
-        byte[] keys = Keccak.KMACXOF256(mergeByteArrays(rnd, pwd), new byte[]{}, 1024, "S");
+        byte[] keys = Keccak.KMACXOF256(ArrayUtilities.mergeByteArrays(rnd, pwd), new byte[]{}, 1024, "S");
         byte[] key1 = Arrays.copyOfRange(keys, 0, 64);
         byte[] key2 = Arrays.copyOfRange(keys, 64, 128);
 
         byte[] mask = Keccak.KMACXOF256(key1, new byte[]{}, in.length*8, "SKE");
-        byte[] enc = xorBytes(mask, in);
+        byte[] enc = ArrayUtilities.xorBytes(mask, in);
         byte[] tag = Keccak.KMACXOF256(key2, in, 512, "SKA");
 
-        return mergeByteArrays(mergeByteArrays(rnd, enc), tag); // (rnd || enc || tag)
+        return ArrayUtilities.mergeByteArrays(ArrayUtilities.mergeByteArrays(rnd, enc), tag); // (rnd || enc || tag)
     }
 
     /**
@@ -100,30 +102,15 @@ public class KCipher {
         byte[] msg = Arrays.copyOfRange(enc, 64, enc.length - 64);
         byte[] tag = Arrays.copyOfRange(enc, enc.length - 64, enc.length);
 
-        byte[] keys = Keccak.KMACXOF256(mergeByteArrays(rnd, pwd), new byte[]{}, 1024, "S");
+        byte[] keys = Keccak.KMACXOF256(ArrayUtilities.mergeByteArrays(rnd, pwd), new byte[]{}, 1024, "S");
         byte[] key1 = Arrays.copyOfRange(keys, 0, 64);
         byte[] key2 = Arrays.copyOfRange(keys, 64, 128);
 
         byte[] mask = Keccak.KMACXOF256(key1, new byte[]{}, msg.length*8, "SKE");
-        byte[] dec = xorBytes(mask, msg);
+        byte[] dec = ArrayUtilities.xorBytes(mask, msg);
         byte[] ctag = Keccak.KMACXOF256(key2, dec, 512, "SKA");
 
         return new DecryptedData(Arrays.equals(tag, ctag), dec);
-    }
-
-    private static byte[] mergeByteArrays(byte[] b1, byte[] b2) {
-        byte[] mrg = Arrays.copyOf(b1, b1.length + b2.length);
-        System.arraycopy(b2, 0, mrg, b1.length, b2.length);
-        return mrg;
-    }
-
-    private static byte[] xorBytes(byte[] arr1, byte[] arr2) {
-        if (arr1.length != arr2.length) throw new IllegalArgumentException("Input arrays are of different lengths");
-        byte[] out = new byte[arr1.length];
-        for (int i = 0; i < arr1.length; i++) {
-            out[i] = (byte) (arr1[i] ^ arr2[i]);
-        }
-        return out;
     }
 
     private static void validateArgs(CipherArgs args) {
@@ -145,22 +132,5 @@ public class KCipher {
             System.out.println("Exiting due to inoperable arguments...");
             System.exit(1);
         }
-    }
-
-    /*
-     * A wrapper to allowing passing of data as well as boolean
-     * indicated it's validation status.
-     */
-    public static class DecryptedData {
-        boolean isValid;
-        byte[] data;
-
-        DecryptedData(boolean isValid, byte[] data) {
-            this.isValid = isValid;
-            this.data = data;
-        }
-
-        public boolean isValid() {return isValid;}
-        public byte[] getBytes() {return data;}
     }
 }

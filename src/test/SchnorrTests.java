@@ -25,15 +25,18 @@ public class SchnorrTests {
      * deserialization.
      */
     @Test
-    public void testKeyManagement() {
+    public void testKeyStorage() {
         ECKeyPair origKey = new ECKeyPair("TestPassword");
         origKey.writePubToFile("pubtest");
-        origKey.writePrvToEncFile("prvtest");
+        origKey.writePrvToEncFile("prvtest", "TestPassword");
+        origKey.writePrvToEncFile("prvtesttwo", "DifferentPassword");
 
         ECKeyPair recKey = ECKeyPair.readPrivateKeyFile("prvtest", "TestPassword");
+        ECKeyPair recKeyTwo = ECKeyPair.readPrivateKeyFile("prvtesttwo", "DifferentPassword");
         CurvePoint recPub = ECKeyPair.readPubKeyFile("pubtest");
 
         Assert.assertEquals(recKey, origKey);
+        Assert.assertEquals(recKeyTwo, origKey);
         Assert.assertEquals(recPub, origKey.getPublicCurvePoint());
     }
 
@@ -53,7 +56,7 @@ public class SchnorrTests {
             CurvePoint p;
             try {
                 p = new CurvePoint(x, gen.nextBoolean());
-            } catch (IllegalArgumentException iax) {
+            } catch (IllegalArgumentException iax) { // the generated x's square root did not exist
                 continue;
             }
             Assert.assertEquals(CurvePoint.negate(p).add(p), CurvePoint.ZERO);

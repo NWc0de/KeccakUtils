@@ -4,7 +4,6 @@
 
 package crypto.schnorr;
 
-import java.io.Serializable;
 import java.math.BigInteger;
 
 //TODO: ecDSA: https://tools.ietf.org/html/rfc8032#section-5.1
@@ -16,12 +15,14 @@ import java.math.BigInteger;
  * @author Spencer Little
  * @version 1.0.0
  */
-public class CurvePoint implements Serializable {
+public class CurvePoint {
 
     /** The neutral element of the curve. */
     public static final CurvePoint ZERO = new CurvePoint(BigInteger.ZERO, BigInteger.ONE);
     /** The quantity used for modular reduction, a Mersenne prime. */
-    private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
+    public static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
+    /** The standard byte length used to represent this point as a byte array. */
+    public static final int stdByteLength = P.toByteArray().length * 2;
     /** The quantity used to define the equation of E_521. */
     private static final BigInteger D = BigInteger.valueOf(-376014);
     private final BigInteger x;
@@ -54,6 +55,9 @@ public class CurvePoint implements Serializable {
         this.x = x;
         this.y = sqrt.mod(P);
     }
+
+    public BigInteger getX() { return x; }
+    public BigInteger getY() { return y; }
 
     /**
      * Negates the provided point.
@@ -98,6 +102,43 @@ public class CurvePoint implements Serializable {
         BigInteger d = a.multiply(b.modInverse(P)).mod(P); // d = (a / b) mod p
         
         return new CurvePoint(c, d);
+    }
+
+    /**
+     * Converts this CurvePoint to a byte array of a standard fixed size
+     * (twice the size of P.toByteArray()) by calling toByteArray() on x
+     * and y and left padding with bytes as necessary so that x and y each
+     * occupy P.toByteArray() bytes.
+     * @return an unambiguous byte array representation of this curve point
+     */
+    public byte[] toByteArray() {
+        byte[] asBytes = new byte[stdByteLength];
+        byte[] xBytes = x.toByteArray(), yBytes = y.toByteArray();
+        System.arraycopy(xBytes, 0, asBytes, stdByteLength / 2 - xBytes.length, xBytes.length);
+        System.arraycopy(yBytes, 0, asBytes, asBytes.length - yBytes.length, yBytes.length);
+        return asBytes;
+    }
+
+    /**
+     * Generates a CurvePoint from the provided byte array, assuming the
+     * byte array is in the format defined in toByteArray().
+     * @param pBytes the byte array representing the desired CurvePoint
+     * @return a CurvePoint parsed from the byte array in the style defined in toByteArray()
+     */
+    public static CurvePoint fromByteArray(byte[] pBytes) {
+        if (pBytes.length != stdByteLength) throw new IllegalArgumentException("Provided byte array is not properly formatted");
+
+        int ind = 0;
+        while (pBytes[ind] == 0) ind++;
+        byte[] xBytes = new byte[stdByteLength / 2 - ind];
+        System.arraycopy(pBytes, ind, xBytes, 0, xBytes.length);
+
+        ind = stdByteLength / 2;
+        while (pBytes[ind] == 0) ind++;
+        byte[] yBytes = new byte[pBytes.length - ind];
+        System.arraycopy(pBytes, ind, yBytes, 0, yBytes.length);
+
+        return new CurvePoint(new BigInteger(xBytes), new BigInteger(yBytes));
     }
 
     /**
