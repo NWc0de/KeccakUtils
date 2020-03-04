@@ -30,8 +30,8 @@ public class ECUtil {
 
     /** A list of the valid operations for this module. */
     private static List<String> validOps = Arrays.asList("keygen", "encrypt", "decrypt", "sign", "verify");
-    /** The standard byte length for one integer in a Schnorr signature. */
-    private static final int STD_BLEN = 512;
+    /** The standard byte length for one integer in a Schnorr signature. h = 64 bytes, z <= 65 bytes. */
+    private static final int STD_BLEN = 129;
 
     public static void main(String[] argv) {
         ECArgs args = new ECArgs();
@@ -165,8 +165,8 @@ public class ECUtil {
      * @return the decrypted data in the form of a byte array
      */
     private static DecryptedData decryptEC(BigInteger prvScl, byte[] enc) {
-        CurvePoint Z = CurvePoint.fromByteArray(Arrays.copyOfRange(enc, 0, CurvePoint.stdByteLength));
-        byte[] msg = Arrays.copyOfRange(enc, CurvePoint.stdByteLength, enc.length - 64);
+        CurvePoint Z = CurvePoint.fromByteArray(Arrays.copyOfRange(enc, 0, CurvePoint.STD_BLEN));
+        byte[] msg = Arrays.copyOfRange(enc, CurvePoint.STD_BLEN, enc.length - 64);
         byte[] tag = Arrays.copyOfRange(enc, enc.length - 64, enc.length);
 
         CurvePoint W = Z.scalarMultiply(prvScl);
@@ -181,6 +181,7 @@ public class ECUtil {
 
         return new DecryptedData(Arrays.equals(tag, ctag), dec); //TODO no need for DecyptedData, do check here, flag for ignore
     }
+
     /**
      * Generates a Schnorr signature of the provided byte array.
      * @param prvScl the private key of the EC key pair to sign the data with
@@ -228,13 +229,13 @@ public class ECUtil {
             System.exit(1);
         }
         if (args.op.equals("keygen") && (args.pubUrl == null || args.prvUrl == null || args.genPwd == null)) {
-            System.out.println("Key generation requires an output url for both the public and private key,\n and " +
+            System.out.println("Key generation requires an output url for both the public and private key, and " +
                     "the password used to generate the new EC key pair.");
             ECArgs.showHelp();
             System.exit(1);
         }
         if (args.op.equals("encrypt") && (args.pubUrl == null || args.dataUrl == null || args.outUrl == null)) {
-            System.out.println("Encryption requires a public key file, an input url, and a url for\n the cryptogram" +
+            System.out.println("Encryption requires a public key file, an input url, and a url for the cryptogram " +
                     "to be written to.");
             ECArgs.showHelp();
             System.exit(1);
@@ -244,9 +245,9 @@ public class ECUtil {
                 || (args.prvUrl !=  null && args.prvPwd == null)
                 || args.dataUrl == null || args.outUrl == null)) {
             System.out.println("Decryption requires a private key file and the password " +
-                    "under which \nthat file is enrypted, or a password alone to generate the " +
-                    "private key, an input url, and a url for \nthe decrypted data to be written to." +
-                    "Note that ECUtils accepts a password for key generation or a private key file, but not both.");
+                    "under which that file is encrypted or a password alone to generate the " +
+                    "private key, an input url, and a url for the decrypted data to be written to." +
+                    " Note that ECUtils accepts a password for key generation or a private key file, but not both.");
             ECArgs.showHelp();
             System.exit(1);
         }
@@ -254,9 +255,9 @@ public class ECUtil {
                 && ((args.prvUrl == null && args.genPwd == null)
                 || (args.prvUrl !=  null && args.prvPwd == null)
                 || args.dataUrl == null || args.outUrl == null)) {
-            System.out.println("Signing a file requires either a password to generate the EC key pair used to signing\n" +
-                    " or a private key file and the password under which that file is encrypted, \na url for the file " +
-                    "to be signed and an output url to write the signature to. \nNote that ECUtils accepts a password" +
+            System.out.println("Signing a file requires either a password to generate the EC key pair used to signing" +
+                    " or a private key file and the password under which that file is encrypted, a url for the file " +
+                    "to be signed and an output url to write the signature to. Note that ECUtils accepts a password" +
                     " for key generation or a private key file, but not both.");
             ECArgs.showHelp();
             System.exit(1);
@@ -271,8 +272,8 @@ public class ECUtil {
 
     /**
      * Converts a Schnorr signature to a byte array of a standard fixed size
-     * by calling toByteArray() on h and z. Since h is always 512 bits, it
-     * is always the first 64 bytes of the byte array produced.
+     * by calling toByteArray() on h and z. Each BigInteger is allotted 64
+     * bytes, sign extended, and then places in the asBytes array.
      * @return an unambiguous byte array representation of this signature (h, z)
      */
     private static byte[] sigToByteArray(BigInteger h, BigInteger z) {
@@ -281,7 +282,7 @@ public class ECUtil {
         int hPos = STD_BLEN / 2 - hBytes.length, zPos = asBytes.length - zBytes.length;
 
         if (h.signum() < 0) Arrays.fill(asBytes, 0, hPos, (byte) 0xff); // sign extend
-        if (z.signum() < 0) Arrays.fill(asBytes, 0, zPos, (byte) 0xff);
+        if (z.signum() < 0) Arrays.fill(asBytes, STD_BLEN / 2, zPos, (byte) 0xff);
         System.arraycopy(hBytes, 0, asBytes, hPos, hBytes.length);
         System.arraycopy(zBytes, 0, asBytes, zPos, zBytes.length);
 

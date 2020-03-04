@@ -23,7 +23,7 @@ public class CurvePoint {
     /** The quantity used for modular reduction, a Mersenne prime. */
     private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
     /** The standard byte length used to represent this point as a byte array. */
-    public static final int stdByteLength = P.toByteArray().length * 2;
+    public static final int STD_BLEN = P.toByteArray().length * 2;
     /** A string representation of the value used to compute R. */
     private static final String RSUB = "337554763258501705789107630418782636071904961214051226618635150085779108655765";
     /** The number of points on E_521 is 4r. This quantity is used when computing Schnorr signatures. */
@@ -64,7 +64,6 @@ public class CurvePoint {
     }
 
     public BigInteger getX() { return x; }
-    public BigInteger getY() { return y; }
 
     /**
      * Negates the provided point.
@@ -82,10 +81,10 @@ public class CurvePoint {
      */
     public CurvePoint scalarMultiply(BigInteger s) {
         CurvePoint res = this;
-        int ind = s.bitCount();
-        while (--ind >= 0) {
+        int ind = s.signum() > 0 ? s.bitLength() : s.bitLength() - 1; // ignore first set bit
+        while (ind >= 0) {
             res = res.add(res);
-            if (s.testBit(ind)) res = res.add(this);
+            if (s.testBit(ind--)) res = res.add(this);
         }
         return res; // res = this * s
     }
@@ -119,12 +118,12 @@ public class CurvePoint {
      * @return an unambiguous byte array representation of this curve point
      */
     public byte[] toByteArray() {
-        byte[] asBytes = new byte[stdByteLength];
+        byte[] asBytes = new byte[STD_BLEN];
         byte[] xBytes = x.toByteArray(), yBytes = y.toByteArray();
-        int xPos = stdByteLength / 2 - xBytes.length, yPos = asBytes.length - yBytes.length;
+        int xPos = STD_BLEN / 2 - xBytes.length, yPos = asBytes.length - yBytes.length;
 
         if (x.signum() < 0) Arrays.fill(asBytes, 0, xPos, (byte) 0xff); // sign extend
-        if (y.signum() < 0) Arrays.fill(asBytes, 0, yPos, (byte) 0xff);
+        if (y.signum() < 0) Arrays.fill(asBytes, STD_BLEN / 2, yPos, (byte) 0xff);
         System.arraycopy(xBytes, 0, asBytes, xPos, xBytes.length);
         System.arraycopy(yBytes, 0, asBytes, yPos, yBytes.length);
 
@@ -138,10 +137,10 @@ public class CurvePoint {
      * @return a CurvePoint parsed from the byte array in the style defined in toByteArray()
      */
     public static CurvePoint fromByteArray(byte[] pBytes) {
-        if (pBytes.length != stdByteLength) throw new IllegalArgumentException("Provided byte array is not properly formatted");
+        if (pBytes.length != STD_BLEN) throw new IllegalArgumentException("Provided byte array is not properly formatted");
 
-        BigInteger x = new BigInteger(Arrays.copyOfRange(pBytes, 0, stdByteLength / 2));
-        BigInteger y = new BigInteger(Arrays.copyOfRange(pBytes, stdByteLength / 2, stdByteLength));
+        BigInteger x = new BigInteger(Arrays.copyOfRange(pBytes, 0, STD_BLEN / 2));
+        BigInteger y = new BigInteger(Arrays.copyOfRange(pBytes, STD_BLEN / 2, STD_BLEN));
 
         return new CurvePoint(x, y);
     }

@@ -4,12 +4,14 @@
 
 package test;
 
+import crypto.keccak.Keccak;
 import crypto.schnorr.CurvePoint;
 import crypto.schnorr.ECKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -20,6 +22,7 @@ import java.util.Random;
  */
 public class SchnorrTests {
 
+    int STD_BLEN = 129;
     /**
      * Tests key generation, serialization, storage, and
      * deserialization.
@@ -78,6 +81,90 @@ public class SchnorrTests {
             }
             Assert.assertEquals(p, CurvePoint.fromByteArray(p.toByteArray()));
         }
+    }
+
+    @Test
+    public void testSignature() {
+        ECKeyPair key = new ECKeyPair("test");
+        byte[] test = new byte[100];
+        Arrays.fill(test, (byte) 0xff);
+
+        byte[] sgn = schnorrSign(key.getPrivateScalar(), test);
+        Assert.assertTrue(validateSignature(sgn, key.getPublicCurvePoint(), test));
+    }
+
+    /**
+     * Generates a Schnorr signature of the provided byte array.
+     * @param prvScl the private key of the EC key pair to sign the data with
+     * @param in the bytes to be signed
+     * @return the digital signature in the form of a byte array
+     */
+    private byte[] schnorrSign(BigInteger prvScl, byte[] in) {
+        byte[] kBytes = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
+        BigInteger k = new BigInteger(kBytes);
+        k = k.multiply(BigInteger.valueOf(4L));
+
+        CurvePoint U = ECKeyPair.G.scalarMultiply(k);
+        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+        BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
+        System.out.println("h: " + h);
+        System.out.println("z: " + z);
+        System.out.println("U: " + U);
+
+        return sigToByteArray(h, z);
+    }
+
+    /**
+     * Verifies a Schnorr signature of the provided bytes based on the
+     * provided public key.
+     * @param sgn the Schnorr signature, see schnorrSign for details
+     * @param pub the public key to valid the signature with
+     * @param in the message to be validated
+     * @return a boolean value indicating the validity of the signature
+     */
+    private boolean validateSignature(byte[] sgn, CurvePoint pub, byte[] in) {
+        BigInteger[] ints = sigFromByteArray(sgn);
+        CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
+        System.out.println("\nh: " + ints[0]);
+        System.out.println("z: " + ints[1]);
+        System.out.println("U: " + U);
+        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+
+        return h.equals(ints[0]);
+    }
+
+    /**
+     * Converts a Schnorr signature to a byte array of a standard fixed size
+     * by calling toByteArray() on h and z. Since h is always 512 bits, it
+     * is always the first 64 bytes of the byte array produced.
+     * @return an unambiguous byte array representation of this signature (h, z)
+     */
+    private byte[] sigToByteArray(BigInteger h, BigInteger z) {
+        byte[] sigBytes = new byte[STD_BLEN];
+        byte[] hBytes = h.toByteArray(), zBytes = z.toByteArray();
+        int hPos = STD_BLEN / 2 - hBytes.length, zPos = sigBytes.length - zBytes.length;
+
+        if (h.signum() < 0) Arrays.fill(sigBytes, 0, hPos, (byte) 0xff); // sign extend
+        if (z.signum() < 0) Arrays.fill(sigBytes, STD_BLEN / 2, zPos, (byte) 0xff);
+        System.arraycopy(hBytes, 0, sigBytes, hPos, hBytes.length);
+        System.arraycopy(zBytes, 0, sigBytes, zPos, zBytes.length);
+
+        return sigBytes;
+    }
+
+    /**
+     * Extracts two BigIntegers from the provided byte array. Assumes the BigIntegers
+     * have been encoded in the format specified in bigIntsToByteArray.
+     * @param in the byte array to decode
+     * @return a Schnorr signature in the form of two BigIntegers (h, z)
+     */
+    private BigInteger[] sigFromByteArray(byte[] in) {
+        if (in.length != STD_BLEN) throw new IllegalArgumentException("Provided byte array is not properly formatted");
+
+        BigInteger h = new BigInteger(Arrays.copyOfRange(in, 0, STD_BLEN / 2));
+        BigInteger z = new BigInteger(Arrays.copyOfRange(in, STD_BLEN / 2, STD_BLEN));
+
+        return new BigInteger[] {h, z};
     }
 
 }

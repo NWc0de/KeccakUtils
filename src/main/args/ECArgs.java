@@ -25,8 +25,7 @@ public class ECArgs {
     @Parameter(names = { "-prv" }, description = "The URL corresponding the private key file to be used for the specified operation.")
     public String prvUrl;
 
-    @Parameter(names = { "--file-pwd" }, description = "The password under which the private key will be " +
-            "encrypted before it is written to file.")
+    @Parameter(names = { "-rpwd" }, description = "The password under which the private key is encrypted ")
     public String prvPwd;
 
     @Parameter(names = { "-f", "--file-name" }, description = "The source of the data to be processed.")
@@ -50,7 +49,7 @@ public class ECArgs {
                 "\n-pwd the password used to generate the EC key pair used for the specified operation " +
                 "\n-pub the url corresponding to the public key file to use for the specified operation " +
                 "\n-prv the url corresponding to the private key file to use for the specified operation " +
-                "\n--file-pwd the password under which the private key will be encrypted if during keygen " +
+                "\n-rpwd the password under which the private key is encrypted " +
                 "\n-f|--file-name the url corresponding to the source of the data to be processed " +
                 "\n-o|--output-url the url corresponding to which the output data will be written " +
                 "\n-s|-signature the url of the file containing the signature to be considered during validation " +
