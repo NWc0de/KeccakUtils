@@ -71,4 +71,4 @@ Decrypting a file under a given password can be accomplished in a similar fashio
 java KCipher -d -f enc.txt -pwf pswd.txt -o dec.txt
 ```
 
-The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i tag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.
+The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i flag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.

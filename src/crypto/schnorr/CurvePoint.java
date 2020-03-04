@@ -5,6 +5,7 @@
 package crypto.schnorr;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 //TODO: ecDSA: https://tools.ietf.org/html/rfc8032#section-5.1
 //TODO: curves: https://tools.ietf.org/html/rfc7748#section-4.1
@@ -20,12 +21,18 @@ public class CurvePoint {
     /** The neutral element of the curve. */
     public static final CurvePoint ZERO = new CurvePoint(BigInteger.ZERO, BigInteger.ONE);
     /** The quantity used for modular reduction, a Mersenne prime. */
-    public static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
+    private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
     /** The standard byte length used to represent this point as a byte array. */
     public static final int stdByteLength = P.toByteArray().length * 2;
+    /** A string representation of the value used to compute R. */
+    private static final String RSUB = "337554763258501705789107630418782636071904961214051226618635150085779108655765";
+    /** The number of points on E_521 is 4r. This quantity is used when computing Schnorr signatures. */
+    public static final BigInteger R = BigInteger.valueOf(2L).pow(519).subtract(new BigInteger(RSUB));
     /** The quantity used to define the equation of E_521. */
     private static final BigInteger D = BigInteger.valueOf(-376014);
+    /** The x coordinate of this curve point. */
     private final BigInteger x;
+    /** The y coordinate of this curve point. */
     private final BigInteger y;
 
     /**
@@ -74,11 +81,11 @@ public class CurvePoint {
      * @return this point multiplied by the provided scalar
      */
     public CurvePoint scalarMultiply(BigInteger s) {
-        CurvePoint res = ECKeyPair.G.clone();
+        CurvePoint res = this;
         int ind = s.bitCount();
         while (--ind >= 0) {
             res = res.add(res);
-            if (s.testBit(ind)) res = res.add(ECKeyPair.G);
+            if (s.testBit(ind)) res = res.add(this);
         }
         return res; // res = this * s
     }
@@ -114,8 +121,13 @@ public class CurvePoint {
     public byte[] toByteArray() {
         byte[] asBytes = new byte[stdByteLength];
         byte[] xBytes = x.toByteArray(), yBytes = y.toByteArray();
-        System.arraycopy(xBytes, 0, asBytes, stdByteLength / 2 - xBytes.length, xBytes.length);
-        System.arraycopy(yBytes, 0, asBytes, asBytes.length - yBytes.length, yBytes.length);
+        int xPos = stdByteLength / 2 - xBytes.length, yPos = asBytes.length - yBytes.length;
+
+        if (x.signum() < 0) Arrays.fill(asBytes, 0, xPos, (byte) 0xff); // sign extend
+        if (y.signum() < 0) Arrays.fill(asBytes, 0, yPos, (byte) 0xff);
+        System.arraycopy(xBytes, 0, asBytes, xPos, xBytes.length);
+        System.arraycopy(yBytes, 0, asBytes, yPos, yBytes.length);
+
         return asBytes;
     }
 
@@ -128,17 +140,10 @@ public class CurvePoint {
     public static CurvePoint fromByteArray(byte[] pBytes) {
         if (pBytes.length != stdByteLength) throw new IllegalArgumentException("Provided byte array is not properly formatted");
 
-        int ind = 0;
-        while (pBytes[ind] == 0) ind++;
-        byte[] xBytes = new byte[stdByteLength / 2 - ind];
-        System.arraycopy(pBytes, ind, xBytes, 0, xBytes.length);
+        BigInteger x = new BigInteger(Arrays.copyOfRange(pBytes, 0, stdByteLength / 2));
+        BigInteger y = new BigInteger(Arrays.copyOfRange(pBytes, stdByteLength / 2, stdByteLength));
 
-        ind = stdByteLength / 2;
-        while (pBytes[ind] == 0) ind++;
-        byte[] yBytes = new byte[pBytes.length - ind];
-        System.arraycopy(pBytes, ind, yBytes, 0, yBytes.length);
-
-        return new CurvePoint(new BigInteger(xBytes), new BigInteger(yBytes));
+        return new CurvePoint(x, y);
     }
 
     /**
@@ -163,15 +168,6 @@ public class CurvePoint {
         CurvePoint op = (CurvePoint) o;
 
         return x.equals(op.x) && y.equals(op.y);
-    }
-
-    /**
-     * Returns a clone of this point with the same x and y values.
-     * @return a new CurvePoint with the same x and y pair
-     */
-    @Override
-    public CurvePoint clone() {
-        return new CurvePoint(this.x, this.y);
     }
 
     /**

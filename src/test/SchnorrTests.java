@@ -64,4 +64,20 @@ public class SchnorrTests {
             if (x.signum() >= 0) Assert.assertEquals(p.add(CurvePoint.ZERO), p);
         }
     }
+
+    @Test
+    public void testCurvePointSerialization() {
+        for (int i = 0; i < 1000; i++) {
+            Random gen = new Random();
+            BigInteger x = BigInteger.valueOf(gen.nextLong());
+            CurvePoint p;
+            try {
+                p = new CurvePoint(x, gen.nextBoolean());
+            } catch (IllegalArgumentException iax) { // the generated x's square root did not exist
+                continue;
+            }
+            Assert.assertEquals(p, CurvePoint.fromByteArray(p.toByteArray()));
+        }
+    }
+
 }

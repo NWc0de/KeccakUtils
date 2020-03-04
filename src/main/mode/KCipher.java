@@ -39,7 +39,7 @@ public class KCipher {
         }
         validateArgs(args);
 
-        byte[] outBytes = null;
+        byte[] outBytes;
         boolean chkSumValid = false;
         if (args.encrypt && args.pwdFile != null) {
             outBytes = keccakEncrypt(FileUtilities.readFileBytes(args.pwdFile), FileUtilities.readFileBytes(args.inputURL));

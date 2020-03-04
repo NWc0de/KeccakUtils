@@ -25,9 +25,9 @@ public class ECKeyPair {
     public static final CurvePoint G = new CurvePoint(BigInteger.valueOf(4L), false);
     /** The variable point of the public key, generated based on the provided pwd. */
     private final CurvePoint pub;
-    /** The secret key. */
-    private final byte[] prv;
-    /** The scalar derived from the secret key. */
+    /** The secret key (a scalar) in byte array format. */
+    private final byte[] prvBytes;
+    /** The secret in BigInteger format. */
     private final BigInteger prvScalar;
 
     /**
@@ -37,22 +37,23 @@ public class ECKeyPair {
      * @param pwd the password used to derive the secret key
      */
     public ECKeyPair(byte[] pwd) {
-        prv = Keccak.KMACXOF256(pwd, new byte[] {}, 512, "K");
-        BigInteger s = new BigInteger(prv);
+        BigInteger s = new BigInteger(Keccak.KMACXOF256(pwd, new byte[] {}, 512, "K"));
         prvScalar = s.multiply(BigInteger.valueOf(4L));
-        pub = G.scalarMultiply(s);
+        prvBytes = prvScalar.toByteArray();
+        pub = G.scalarMultiply(prvScalar);
     }
 
     /**
      * Constructs a new key pair with the provided private key. Enables
      * a private key to be read from a file instead of created directly with
-     * password.
+     * password. The private key is assumed to be a BigInteger in byte array
+     * format.
      * @param pvk the private key in the form of a big integer
      */
     public ECKeyPair(BigInteger pvk) {
-        prv = pvk.toByteArray();
-        prvScalar = pvk.multiply(BigInteger.valueOf(4L));
-        pub = G.scalarMultiply(pvk);
+        prvScalar = pvk;
+        prvBytes = prvScalar.toByteArray();
+        pub = G.scalarMultiply(prvScalar);
     }
 
     /**
@@ -121,12 +122,11 @@ public class ECKeyPair {
 
     /**
      * Encrypts the private key under the provided password, then
-     * writes it to the specificied url.
-     * provided during initialization.
+     * writes it to the url provided.
      * @param url the desired file name
      */
     public void writePrvToEncFile(String url, byte[] upwd) {
-        FileUtilities.writeBytesToFile(KCipher.keccakEncrypt(upwd, prv), url);
+        FileUtilities.writeBytesToFile(KCipher.keccakEncrypt(upwd, prvBytes), url);
     }
 
     /**
@@ -151,7 +151,7 @@ public class ECKeyPair {
 
         ECKeyPair ok = (ECKeyPair) o;
 
-        return Arrays.equals(prv, ok.prv) && pub.equals(ok.pub);
+        return Arrays.equals(prvBytes, ok.prvBytes) && pub.equals(ok.pub);
 
     }
 }
