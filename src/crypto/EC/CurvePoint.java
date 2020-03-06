@@ -2,13 +2,10 @@
  * Implements elliptic curve points to enable asymmetric ECDHEIS functionality.
  */
 
-package crypto.schnorr;
+package crypto.EC;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-
-//TODO: ecDSA: https://tools.ietf.org/html/rfc8032#section-5.1
-//TODO: curves: https://tools.ietf.org/html/rfc7748#section-4.1
 
 /**
  * Implements a point on the Edwards curve E_521, defined by
@@ -21,7 +18,7 @@ public class CurvePoint {
     /** The neutral element of the curve. */
     public static final CurvePoint ZERO = new CurvePoint(BigInteger.ZERO, BigInteger.ONE);
     /** The quantity used for modular reduction, a Mersenne prime. */
-    public static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
+    private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
     /** The standard byte length used to represent this point as a byte array. */
     public static final int STD_BLEN = P.toByteArray().length * 2;
     /** A string representation of the value used to compute R. */

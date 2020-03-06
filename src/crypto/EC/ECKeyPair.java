@@ -2,10 +2,10 @@
  * Enables the generation and maintenance of ECDHIES key pairs.
  */
 
-package crypto.schnorr;
+package crypto.EC;
 
+import crypto.keccak.KCrypt;
 import crypto.keccak.Keccak;
-import main.mode.KCipher;
 import util.DecryptedData;
 import util.FileUtilities;
 
@@ -94,7 +94,7 @@ public class ECKeyPair {
      * @return a new ECKeyPair object containing the private key of the file
      */
     public static ECKeyPair readPrivateKeyFile(String url, byte[] pwd) {
-        DecryptedData prvBytes = KCipher.keccakDecrypt(pwd, FileUtilities.readFileBytes(url));
+        DecryptedData prvBytes = KCrypt.keccakDecrypt(pwd, FileUtilities.readFileBytes(url));
         if (!prvBytes.isValid()) {
             System.out.println("Authentication of encrypted private key was unsuccessful.");
             System.out.println("Stored key may be corrupted, perhaps use the password to reinitialize?");
@@ -126,7 +126,7 @@ public class ECKeyPair {
      * @param url the desired file name
      */
     public void writePrvToEncFile(String url, byte[] upwd) {
-        FileUtilities.writeBytesToFile(KCipher.keccakEncrypt(upwd, prvBytes), url);
+        FileUtilities.writeBytesToFile(KCrypt.keccakEncrypt(upwd, prvBytes), url);
     }
 
     /**

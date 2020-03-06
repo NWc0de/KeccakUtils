@@ -7,16 +7,14 @@ package main.mode;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import crypto.keccak.Keccak;
-import crypto.schnorr.CurvePoint;
-import crypto.schnorr.ECKeyPair;
+import crypto.EC.ECCrypt;
+import crypto.EC.CurvePoint;
+import crypto.EC.ECKeyPair;
+import crypto.EC.ECSign;
 import main.args.ECArgs;
-import util.ArrayUtilities;
 import util.DecryptedData;
 import util.FileUtilities;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,8 +28,6 @@ public class ECUtil {
 
     /** A list of the valid operations for this module. */
     private static List<String> validOps = Arrays.asList("keygen", "encrypt", "decrypt", "sign", "verify");
-    /** The standard byte length for one integer in a Schnorr signature. h = 64 bytes, z <= 65 bytes. */
-    private static final int STD_BLEN = 129;
 
     public static void main(String[] argv) {
         ECArgs args = new ECArgs();
@@ -73,7 +69,7 @@ public class ECUtil {
     private static void encryptData(ECArgs args) {
         CurvePoint pub = ECKeyPair.readPubKeyFile(args.pubUrl);
         byte[] in = FileUtilities.readFileBytes(args.dataUrl);
-        FileUtilities.writeBytesToFile(encryptEC(pub, in), args.outUrl);
+        FileUtilities.writeBytesToFile(ECCrypt.encryptEC(pub, in), args.outUrl);
         System.out.println("Encrypted data successfully written to url: " + args.outUrl);
     }
 
@@ -88,7 +84,7 @@ public class ECUtil {
         }
 
         byte[] enc = FileUtilities.readFileBytes(args.dataUrl);
-        DecryptedData dec = decryptEC(key.getPrivateScalar(), enc);
+        DecryptedData dec = ECCrypt.decryptEC(key.getPrivateScalar(), enc);
         System.out.println("Data decryption successful.");
 
         if (!dec.isValid()) {
@@ -110,7 +106,7 @@ public class ECUtil {
         }
 
         byte[] in = FileUtilities.readFileBytes(args.dataUrl);
-        FileUtilities.writeBytesToFile(schnorrSign(key.getPrivateScalar(), in), args.outUrl);
+        FileUtilities.writeBytesToFile(ECSign.schnorrSign(key.getPrivateScalar(), in), args.outUrl);
         System.out.println("Signature generated and written to url: " + args.outUrl);
     }
 
@@ -119,103 +115,12 @@ public class ECUtil {
         CurvePoint pub = ECKeyPair.readPubKeyFile(args.pubUrl);
         byte[] msg = FileUtilities.readFileBytes(args.dataUrl);
 
-        if (validateSignature(sig, pub, msg)) {
-            System.out.println("Signature OK.");
+        if (ECSign.validateSignature(sig, pub, msg)) {
+            System.out.println("Signature OK.\n" + args.sigUrl + " is valid for " + args.pubUrl + " on message " + args.dataUrl);
         } else {
-            System.out.println("Signature is not valid.");
+            System.out.println("Signature NOT VALID.\n" + args.sigUrl + " is not valid for " + args.pubUrl + " on message " + args.dataUrl);
         }
     }
-
-    /**
-     * Encrypts the provided byte array with the EC public key defined by (pub, G)
-     * where G is the static public key point defined in ECKeyPair. Encryption is
-     * done via the ECDHIES using KMACXOF256 as the underlying primitive.
-     * @param pub the public key as a CurvePoint
-     * @param in the data to be encrypted
-     * @return a cryptogram including Z, a serialized curve point, c, the cipher text, and t the authentication tag
-     */
-    private static byte[] encryptEC(CurvePoint pub, byte[] in) {
-        SecureRandom randGen = new SecureRandom();
-        byte[] rndBytes = new byte[64];
-        randGen.nextBytes(rndBytes);
-        BigInteger k = new BigInteger(rndBytes);
-        k = k.multiply(BigInteger.valueOf(4L));
-
-        CurvePoint W = pub.scalarMultiply(k);
-        CurvePoint Z = ECKeyPair.G.scalarMultiply(k);
-
-        byte[] keys = Keccak.KMACXOF256(W.getX().toByteArray(), new byte[]{}, 1024, "P");
-        byte[] key1 = Arrays.copyOfRange(keys, 0, 64);
-        byte[] key2 = Arrays.copyOfRange(keys, 64, 128);
-
-        byte[] mask = Keccak.KMACXOF256(key1, new byte[]{}, in.length*8, "PKE");
-        byte[] enc = ArrayUtilities.xorBytes(mask, in);
-        byte[] tag = Keccak.KMACXOF256(key2, in, 512, "PKA");
-
-        return ArrayUtilities.mergeByteArrays(ArrayUtilities.mergeByteArrays(Z.toByteArray(), enc), tag); // (Z || enc || tag)
-    }
-
-    /**
-     * Decrypts the provided byte array using the private scalar, prvScl. Assumes
-     * that the byte array to be decrypted is provided in the format produced
-     * by encryptEC, (Z || enc || tag), where Z is the serialized public
-     * CurvePoint, enc is the cipher text, and tag is the authentication tag.
-     * @param prvScl the private scalar
-     * @param enc the byte array to be decrypted
-     * @return the decrypted data in the form of a byte array
-     */
-    private static DecryptedData decryptEC(BigInteger prvScl, byte[] enc) {
-        CurvePoint Z = CurvePoint.fromByteArray(Arrays.copyOfRange(enc, 0, CurvePoint.STD_BLEN));
-        byte[] msg = Arrays.copyOfRange(enc, CurvePoint.STD_BLEN, enc.length - 64);
-        byte[] tag = Arrays.copyOfRange(enc, enc.length - 64, enc.length);
-
-        CurvePoint W = Z.scalarMultiply(prvScl);
-
-        byte[] keys = Keccak.KMACXOF256(W.getX().toByteArray(), new byte[]{}, 1024, "P");
-        byte[] key1 = Arrays.copyOfRange(keys, 0, 64);
-        byte[] key2 = Arrays.copyOfRange(keys, 64, 128);
-
-        byte[] mask = Keccak.KMACXOF256(key1, new byte[]{}, msg.length*8, "PKE");
-        byte[] dec = ArrayUtilities.xorBytes(mask, msg);
-        byte[] ctag = Keccak.KMACXOF256(key2, dec, 512, "PKA");
-
-        return new DecryptedData(Arrays.equals(tag, ctag), dec); //TODO no need for DecyptedData, do check here, flag for ignore
-    }
-
-    /**
-     * Generates a Schnorr signature of the provided byte array.
-     * @param prvScl the private key of the EC key pair to sign the data with
-     * @param in the bytes to be signed
-     * @return the digital signature in the form of a byte array
-     */
-    private static byte[] schnorrSign(BigInteger prvScl, byte[] in) {
-        byte[] kBytes = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
-        BigInteger k = new BigInteger(kBytes);
-        k = k.multiply(BigInteger.valueOf(4L));
-
-        CurvePoint U = ECKeyPair.G.scalarMultiply(k);
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
-        BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
-
-        return sigToByteArray(h, z);
-    }
-
-    /**
-     * Verifies a Schnorr signature of the provided bytes based on the
-     * provided public key.
-     * @param sgn the Schnorr signature, see schnorrSign for details
-     * @param pub the public key to valid the signature with
-     * @param in the message to be validated
-     * @return a boolean value indicating the validity of the signature
-     */
-    private static boolean validateSignature(byte[] sgn, CurvePoint pub, byte[] in) {
-        BigInteger[] ints = sigFromByteArray(sgn);
-        CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
-
-        return h.equals(ints[0]);
-    }
-
 
     /**
      * Validates the provided ECArgs object by assuring it has a
@@ -268,39 +173,5 @@ public class ECUtil {
             ECArgs.showHelp();
             System.exit(1);
         }
-    }
-
-    /**
-     * Converts a Schnorr signature to a byte array of a standard fixed size
-     * by calling toByteArray() on h and z. Each BigInteger is allotted 64
-     * bytes, sign extended, and then places in the asBytes array.
-     * @return an unambiguous byte array representation of this signature (h, z)
-     */
-    private static byte[] sigToByteArray(BigInteger h, BigInteger z) {
-        byte[] asBytes = new byte[STD_BLEN];
-        byte[] hBytes = h.toByteArray(), zBytes = z.toByteArray();
-        int hPos = STD_BLEN / 2 - hBytes.length, zPos = asBytes.length - zBytes.length;
-
-        if (h.signum() < 0) Arrays.fill(asBytes, 0, hPos, (byte) 0xff); // sign extend
-        if (z.signum() < 0) Arrays.fill(asBytes, STD_BLEN / 2, zPos, (byte) 0xff);
-        System.arraycopy(hBytes, 0, asBytes, hPos, hBytes.length);
-        System.arraycopy(zBytes, 0, asBytes, zPos, zBytes.length);
-
-        return asBytes;
-    }
-
-    /**
-     * Extracts two BigIntegers from the provided byte array. Assumes the BigIntegers
-     * have been encoded in the format specified in bigIntsToByteArray.
-     * @param in the byte array to decode
-     * @return a Schnorr signature in the form of two BigIntegers (h, z)
-     */
-    private static BigInteger[] sigFromByteArray(byte[] in) {
-        if (in.length != STD_BLEN) throw new IllegalArgumentException("Provided byte array is not properly formatted");
-
-        BigInteger h = new BigInteger(Arrays.copyOfRange(in, 0, STD_BLEN / 2));
-        BigInteger z = new BigInteger(Arrays.copyOfRange(in, STD_BLEN / 2, STD_BLEN));
-
-        return new BigInteger[] {h, z};
     }
 }

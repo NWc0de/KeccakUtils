@@ -1,6 +1,6 @@
 # KeccakUtils
 
-KeccakUtils provides a range of cryptographic functions (SHA3/cSHAKE256 hash computation, symmetric encryption via KMACXOF256 duplexed sponge, and ECDHIES key generation and signing) built on top of a rigorously tested NIST compliant Keccak implementation. Compliance testing was done in the style of NIST's Cryptographic Algorithm Validation Program using the suite of test vectors available on the [NIST CAVP page](https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing).
+KeccakUtils provides a range of cryptographic functions: SHA3 hash computation, authenticated encryption via KMACXOF256, elliptic curve key generation, asymmetric encryption (ECDHIES), and Schnorr signature generation and validation. The elliptic curve that provides the basis for the ECDHIES and Schnorr signature utilities is an Edwards curve (ed5211). The Keccak primitives are NIST compliant. Compliance testing was done in the style of NIST's Cryptographic Algorithm Validation Program using the suite of test vectors available on the [NIST CAVP page](https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing).
 
 ## Keccak
 The core Keccak functions are implemented in ```Keccak.java``` (along with the associated sponge modality). SHA3, SHAKE256, cSHAKE256, and KMACXOF256 are made available through this class. The associated set of unit tests, ```SHA3Test.java``` and ```SHAKETest.java```, demonstrate compliance with NIST standards [NIST FIP 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) and [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
@@ -52,7 +52,7 @@ java KHASH -w hashbytes -im file -i test.txt -k keyfile
 ```
 
 ## KCipher
-KCipher is a cli utility that provides authenticated symmetric encryption services via a duplexed KMACXOF256 sponge. Encryption is performed under a user provided password. 
+KCipher is a cli utility that provides authenticated symmetric encryption services derived from the KMACXOF256 primitive. The user provided password is combined with some psuedo-random bytes from ```SecureRandom``` and the resulting byte array is passed to KMACXOF256 as a key to generate two auxiliary keys. Both keys are again used with KMACXOF256, one to produce a mask that will be xored with the message to produce the ciphertext, and the other to compute the message authentication code. 
 
 To encrypt a file under the password, 'pass':
 ```aidl

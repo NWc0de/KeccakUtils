@@ -4,14 +4,16 @@
 
 package test;
 
-import crypto.keccak.Keccak;
-import crypto.schnorr.CurvePoint;
-import crypto.schnorr.ECKeyPair;
+import crypto.EC.CurvePoint;
+import crypto.EC.ECCrypt;
+import crypto.EC.ECKeyPair;
+import crypto.EC.ECSign;
 import org.junit.Assert;
 import org.junit.Test;
+import util.DecryptedData;
 
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.security.SecureRandom;
 import java.util.Random;
 
 /**
@@ -22,7 +24,6 @@ import java.util.Random;
  */
 public class ECTests {
 
-    int STD_BLEN = 129;
     /**
      * Tests key generation, serialization, storage, and
      * deserialization.
@@ -84,84 +85,42 @@ public class ECTests {
     }
 
     @Test
-    public void testSchnorrSignature() {
-        ECKeyPair key = new ECKeyPair("tes");
-        Random gen = new Random();
-        byte[] test = new byte[1000];
-        for (int i = 0; i < 1000; i++) {
+    public void testECCrypt() {
+        ECKeyPair key;
+        SecureRandom gen = new SecureRandom();
+        byte[] test = new byte[100];
+        for (int i = 0; i < 100; i++) {
+            key = new ECKeyPair(randString());
             gen.nextBytes(test);
-
-            byte[] sgn = schnorrSign(key.getPrivateScalar(), test, key);
-            Assert.assertTrue(validateSignature(sgn, key.getPublicCurvePoint(), test));
+            byte[] enc = ECCrypt.encryptEC(key.getPublicCurvePoint(), test);
+            DecryptedData dec = ECCrypt.decryptEC(key.getPrivateScalar(), enc);
+            Assert.assertTrue(dec.isValid());
+            Assert.assertArrayEquals(test, dec.getBytes());
         }
     }
 
-    /**
-     * Generates a Schnorr signature of the provided byte array.
-     * @param prvScl the private key of the EC key pair to sign the data with
-     * @param in the bytes to be signed
-     * @return the digital signature in the form of a byte array
-     */
-    private byte[] schnorrSign(BigInteger prvScl, byte[] in, ECKeyPair key) {
-        byte[] kBytes = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
-        BigInteger k = new BigInteger(kBytes);
-        k = k.multiply(BigInteger.valueOf(4L));
-
-        CurvePoint U = ECKeyPair.G.scalarMultiply(k);
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
-        BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
-
-        return sigToByteArray(h, z);
+    @Test
+    public void testSchnorrSignature() {
+        ECKeyPair key;
+        SecureRandom gen = new SecureRandom();
+        byte[] test = new byte[100];
+        for (int i = 0; i < 100; i++) {
+            key = new ECKeyPair(randString());
+            gen.nextBytes(test);
+            byte[] sgn = ECSign.schnorrSign(key.getPrivateScalar(), test);
+            Assert.assertTrue(ECSign.validateSignature(sgn, key.getPublicCurvePoint(), test));
+        }
     }
 
-    /**
-     * Verifies a Schnorr signature of the provided bytes based on the
-     * provided public key.
-     * @param sgn the Schnorr signature, see schnorrSign for details
-     * @param pub the public key to valid the signature with
-     * @param in the message to be validated
-     * @return a boolean value indicating the validity of the signature
-     */
-    private boolean validateSignature(byte[] sgn, CurvePoint pub, byte[] in) {
-        BigInteger[] ints = sigFromByteArray(sgn);
-        CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
-
-        return h.equals(ints[0]);
-    }
-
-    /**
-     * Converts a Schnorr signature to a byte array of a standard fixed size
-     * by calling toByteArray() on h and z. Since h is always 512 bits, it
-     * is always the first 64 bytes of the byte array produced.
-     * @return an unambiguous byte array representation of this signature (h, z)
-     */
-    private byte[] sigToByteArray(BigInteger h, BigInteger z) {
-        byte[] sigBytes = new byte[STD_BLEN];
-        byte[] hBytes = h.toByteArray(), zBytes = z.toByteArray();
-        int hPos = STD_BLEN / 2 - hBytes.length, zPos = sigBytes.length - zBytes.length;
-
-        if (h.signum() < 0) Arrays.fill(sigBytes, 0, hPos, (byte) 0xff); // sign extend
-        if (z.signum() < 0) Arrays.fill(sigBytes, STD_BLEN / 2, zPos, (byte) 0xff);
-        System.arraycopy(hBytes, 0, sigBytes, hPos, hBytes.length);
-        System.arraycopy(zBytes, 0, sigBytes, zPos, zBytes.length);
-
-        return sigBytes;
-    }
-
-    /**
-     * Extracts two BigIntegers from the provided byte array. Assumes the BigIntegers
-     * have been encoded in the format specified in bigIntsToByteArray.
-     * @param in the byte array to decode
-     * @return a Schnorr signature in the form of two BigIntegers (h, z)
-     */
-    private BigInteger[] sigFromByteArray(byte[] in) {
-        if (in.length != STD_BLEN) throw new IllegalArgumentException("Provided byte array is not properly formatted");
-
-        BigInteger h = new BigInteger(Arrays.copyOfRange(in, 0, STD_BLEN / 2));
-        BigInteger z = new BigInteger(Arrays.copyOfRange(in, STD_BLEN / 2, STD_BLEN));
-
-        return new BigInteger[] {h, z};
+    private String randString() {
+        SecureRandom gen = new SecureRandom();
+        StringBuilder rnd = new StringBuilder();
+        for (int i = 0; i < gen.nextInt(100); i++) {
+            int ch = gen.nextInt(122);
+            while (ch < 65) ch = ch + gen.nextInt(122 - ch);
+            rnd.append((char) ch);
+        }
+        return rnd.toString();
     }
 
 }
