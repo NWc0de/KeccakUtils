@@ -53,7 +53,7 @@ public class SchnorrTests {
         // G + 0 = G
         Assert.assertEquals(ECKeyPair.G.add(CurvePoint.ZERO), ECKeyPair.G);
         // Perform the same tests for 100 randomly generated points
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             Random gen = new Random();
             BigInteger x = BigInteger.valueOf(gen.nextLong());
             CurvePoint p;
@@ -85,11 +85,11 @@ public class SchnorrTests {
 
     @Test
     public void testSignature() {
-        ECKeyPair key = new ECKeyPair("test");
+        ECKeyPair key = new ECKeyPair("tes");
         byte[] test = new byte[100];
         Arrays.fill(test, (byte) 0xff);
 
-        byte[] sgn = schnorrSign(key.getPrivateScalar(), test);
+        byte[] sgn = schnorrSign(key.getPrivateScalar(), test, key);
         Assert.assertTrue(validateSignature(sgn, key.getPublicCurvePoint(), test));
     }
 
@@ -99,17 +99,27 @@ public class SchnorrTests {
      * @param in the bytes to be signed
      * @return the digital signature in the form of a byte array
      */
-    private byte[] schnorrSign(BigInteger prvScl, byte[] in) {
+    private byte[] schnorrSign(BigInteger prvScl, byte[] in, ECKeyPair key) {
         byte[] kBytes = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
         BigInteger k = new BigInteger(kBytes);
         k = k.multiply(BigInteger.valueOf(4L));
 
         CurvePoint U = ECKeyPair.G.scalarMultiply(k);
         BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+        //CurvePoint t1 = ECKeyPair.G.scalarMultiply(prvScl).scalarMultiply(h); // h * s * G
+        //CurvePoint t2 = key.getPublicCurvePoint().scalarMultiply(h); // h * V
+        //System.out.println("h * V == h * s * G: " + t1.equals(t2)); // h * V == h * s * G
         BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
-        System.out.println("h: " + h);
-        System.out.println("z: " + z);
-        System.out.println("U: " + U);
+
+        CurvePoint t3 = ECKeyPair.G.scalarMultiply(z); // z * G
+        CurvePoint t4 = ECKeyPair.G.scalarMultiply(k).add(CurvePoint.negate(ECKeyPair.G.scalarMultiply(prvScl.multiply(h)))); // k * G - h * s * G
+        System.out.println("zG: " + t3);
+        System.out.println("kG - hsG: " + t4);
+        System.out.println("zG == kG - hsG: " + t3.equals(t4));
+
+        System.out.println("\nU: " + U);
+        CurvePoint U1 = ECKeyPair.G.scalarMultiply(z).add(key.getPublicCurvePoint().scalarMultiply(h));
+        System.out.println("U1: " + U1);
 
         return sigToByteArray(h, z);
     }
@@ -125,9 +135,7 @@ public class SchnorrTests {
     private boolean validateSignature(byte[] sgn, CurvePoint pub, byte[] in) {
         BigInteger[] ints = sigFromByteArray(sgn);
         CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
-        System.out.println("\nh: " + ints[0]);
-        System.out.println("z: " + ints[1]);
-        System.out.println("U: " + U);
+        // System.out.println("U: " + U);
         BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
 
         return h.equals(ints[0]);

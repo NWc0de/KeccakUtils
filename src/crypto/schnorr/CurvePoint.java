@@ -21,7 +21,7 @@ public class CurvePoint {
     /** The neutral element of the curve. */
     public static final CurvePoint ZERO = new CurvePoint(BigInteger.ZERO, BigInteger.ONE);
     /** The quantity used for modular reduction, a Mersenne prime. */
-    private static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
+    public static final BigInteger P = BigInteger.valueOf(2L).pow(521).subtract(BigInteger.ONE);
     /** The standard byte length used to represent this point as a byte array. */
     public static final int STD_BLEN = P.toByteArray().length * 2;
     /** A string representation of the value used to compute R. */
@@ -70,9 +70,7 @@ public class CurvePoint {
      * @param op the point to be negated
      * @return a new curve point (-op.x % p, op.y)
      */
-    public static CurvePoint negate(CurvePoint op) {
-        return new CurvePoint(op.x.negate().mod(P), op.y);
-    }
+    public static CurvePoint negate(CurvePoint op) { return new CurvePoint(op.x.negate().mod(P), op.y); }
 
     /**
      * Multiplies this point by a scalar and returns the result.
@@ -80,8 +78,8 @@ public class CurvePoint {
      * @return this point multiplied by the provided scalar
      */
     public CurvePoint scalarMultiply(BigInteger s) {
-        CurvePoint res = this;
-        int ind = s.signum() > 0 ? s.bitLength() : s.bitLength() - 1; // ignore first set bit
+        CurvePoint res = ZERO;
+        int ind = s.bitLength();
         while (ind >= 0) {
             res = res.add(res);
             if (s.testBit(ind--)) res = res.add(this);
@@ -97,15 +95,15 @@ public class CurvePoint {
      * @return this + op (based on the formula described above)
      */
     public CurvePoint add(CurvePoint op) {
-        BigInteger xy  = x.multiply(op.x).multiply(y.multiply(op.y)); // x_1 * x_2 * y_1 * y_2
+        BigInteger xy  = x.multiply(op.x).multiply(y.multiply(op.y)).mod(P); // x_1 * x_2 * y_1 * y_2 mod p
 
         BigInteger a = x.multiply(op.y).add(y.multiply(op.x)).mod(P); // a = (x_1 * y_2 + y_1 * x_2) mod p
         BigInteger b = BigInteger.ONE.add(D.multiply(xy)).mod(P); // b = (1 + d * x_1 * x_2 * y_1 * y_2)) mod p
-        BigInteger c = a.multiply(b.modInverse(P)).mod(P); // x = (a / b) mod p
+        BigInteger c = a.multiply(b.modInverse(P)).mod(P); // c = (a * b^-1 mod p) mod p = (a / b) mod p
 
         a = y.multiply(op.y).subtract(x.multiply(op.x)).mod(P); // a = (y_1 * y_2 - x_1 * x_2) mod p
         b = BigInteger.ONE.subtract(D.multiply(xy)).mod(P); // b = (1 - d * x_1 * x_2 * y_1 * y_2)) mod p
-        BigInteger d = a.multiply(b.modInverse(P)).mod(P); // d = (a / b) mod p
+        BigInteger d = a.multiply(b.modInverse(P)).mod(P); // d = (a * b^-1 mod p) mod p = (a / b) mod p
         
         return new CurvePoint(c, d);
     }

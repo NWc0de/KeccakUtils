@@ -138,11 +138,11 @@ public class ECUtil {
         SecureRandom randGen = new SecureRandom();
         byte[] rndBytes = new byte[64];
         randGen.nextBytes(rndBytes);
-        BigInteger prvCnst = new BigInteger(rndBytes);
-        prvCnst = prvCnst.multiply(BigInteger.valueOf(4L));
+        BigInteger k = new BigInteger(rndBytes);
+        k = k.multiply(BigInteger.valueOf(4L));
 
-        CurvePoint W = pub.scalarMultiply(prvCnst);
-        CurvePoint Z = ECKeyPair.G.scalarMultiply(prvCnst);
+        CurvePoint W = pub.scalarMultiply(k);
+        CurvePoint Z = ECKeyPair.G.scalarMultiply(k);
 
         byte[] keys = Keccak.KMACXOF256(W.getX().toByteArray(), new byte[]{}, 1024, "P");
         byte[] key1 = Arrays.copyOfRange(keys, 0, 64);
