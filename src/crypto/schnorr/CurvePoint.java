@@ -79,6 +79,7 @@ public class CurvePoint {
      */
     public CurvePoint scalarMultiply(BigInteger s) {
         CurvePoint res = ZERO;
+        s = s.mod(R); // NOTE: This fixes signatures
         int ind = s.bitLength();
         while (ind >= 0) {
             res = res.add(res);

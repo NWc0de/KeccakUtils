@@ -106,9 +106,11 @@ public class SchnorrTests {
 
         CurvePoint U = ECKeyPair.G.scalarMultiply(k);
         BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
-        //CurvePoint t1 = ECKeyPair.G.scalarMultiply(prvScl).scalarMultiply(h); // h * s * G
-        //CurvePoint t2 = key.getPublicCurvePoint().scalarMultiply(h); // h * V
-        //System.out.println("h * V == h * s * G: " + t1.equals(t2)); // h * V == h * s * G
+        CurvePoint t1 = ECKeyPair.G.scalarMultiply(prvScl.multiply(h)); // h * s * G
+        CurvePoint t2 = key.getPublicCurvePoint().scalarMultiply(h); // h * V
+        System.out.println(t1);
+        System.out.println(t2);
+        System.out.println("h * V == h * s * G: " + t1.equals(t2)); // h * V == h * s * G
         BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
 
         CurvePoint t3 = ECKeyPair.G.scalarMultiply(z); // z * G
