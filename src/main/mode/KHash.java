@@ -35,6 +35,7 @@ public class KHash {
             HashArgs.showHelp();
             System.exit(1);
         }
+        validateArgs(args);
 
         byte[] outBytes = processInput(args);
 
@@ -48,12 +49,9 @@ public class KHash {
 
     private static byte[] processInput(HashArgs args) {
         byte[] outBytes = null;
-        if (args.bitLen % 8 != 0) {
-            System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
-            System.exit(1);
-        }
+
         if (args.op.contains("KMACXOF256")) {
-            outBytes = processKMAC(args);
+            outBytes =  Keccak.KMACXOF256(FileUtilities.readFileBytes(args.keyUrl), readBytes(args), args.bitLen, args.cString);
         } else if (args.op.contains("cSHAKE256")) {
             outBytes = Keccak.cSHAKE256(readBytes(args), args.bitLen, "", args.cString);
         } else if (args.op.contains("SHA3")) {
@@ -67,17 +65,33 @@ public class KHash {
         return outBytes;
     }
 
-    private static byte[] processKMAC(HashArgs args) {
-        if (args.keyUrl == null) {
-            System.out.println("KMACXOF mode requires a key file.");
+    /**
+     * Validates the provided HashArgs object by assuring it has a
+     * valid combination of parameters
+     * @param args the HashArgs object to validate
+     */
+    private static void validateArgs(HashArgs args) {
+        if (args.op.contains("SHA3")
+                && !(args.bitLen == 224 || args.bitLen == 256 || args.bitLen == 384 || args.bitLen == 512)) {
+            System.out.println("SHA3 supports bit lengths of 224, 256, 384, 512.");
             HashArgs.showHelp();
             System.exit(1);
+        } else if (args.op.contains("SHA3") && (!args.cString.equals("") || args.keyUrl != null)) {
+            System.out.println("SHA3 does not support customization strings or keys.");
+            HashArgs.showHelp();
+            System.exit(1);
+        } else if (args.op.contains("cSHAKE256") && args.keyUrl != null) {
+            System.out.println("cSHAKE256 does not support keys. Did you mean KMACXOF256?");
+            HashArgs.showHelp();
+            System.exit(1);
+        } else if (args.op.contains("KMACXOF256") && args.keyUrl == null) {
+            System.out.println("KMACXOF256 requires a key file.");
+            HashArgs.showHelp();
+            System.exit(1);
+        } else if (args.bitLen % 8 != 0) {
+            System.out.println("Output bit length must be evenly divisible by 8 (bytewise).");
+            System.exit(1);
         }
-
-        byte[] inBytes = readBytes(args);
-        byte[] keyBytes = FileUtilities.readFileBytes(args.keyUrl);
-
-        return Keccak.KMACXOF256(keyBytes, inBytes, args.bitLen, args.cString);
     }
 
     /**

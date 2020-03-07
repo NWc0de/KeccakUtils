@@ -74,7 +74,7 @@ public class Keccak {
 
         byte[] fin = mergeByteArrays(encodeString(funcName.getBytes()), encodeString(custStr.getBytes()));
         fin = mergeByteArrays(bytepad(fin, 136), in);
-        fin = mergeByteArrays(fin, new byte[] {0x04}); // append two zero bits here? from test vectors seems like 0x04 is convention
+        fin = mergeByteArrays(fin, new byte[] {0x04});
 
         return sponge(fin, bitLen, 512);
     }
