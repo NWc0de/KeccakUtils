@@ -150,8 +150,8 @@ public class ECUtil {
                 && ((args.prvUrl == null && args.genPwd == null)
                 || (args.prvUrl !=  null && args.prvPwd == null)
                 || args.dataUrl == null || args.outUrl == null)) {
-            System.out.println("Decryption requires a private key file and the password " +
-                    "under which that file is encrypted or a password alone to generate the " +
+            System.out.println("Decryption requires either a private key file and the password " +
+                    "under which that file is encrypted or a password to generate the " +
                     "private key, an input url, and a url for the decrypted data to be written to." +
                     " Note that ECUtils accepts a password for key generation or a private key file, but not both.");
             ECArgs.showHelp();
@@ -161,7 +161,7 @@ public class ECUtil {
                 && ((args.prvUrl == null && args.genPwd == null)
                 || (args.prvUrl !=  null && args.prvPwd == null)
                 || args.dataUrl == null || args.outUrl == null)) {
-            System.out.println("Signing a file requires either a password to generate the EC key pair used to signing" +
+            System.out.println("Signing a file requires either a password to generate the private key used for signing" +
                     " or a private key file and the password under which that file is encrypted, a url for the file " +
                     "to be signed and an output url to write the signature to. Note that ECUtils accepts a password" +
                     " for key generation or a private key file, but not both.");

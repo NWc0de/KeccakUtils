@@ -20,7 +20,7 @@ java KHASH -op SHA3 -f test.txt -l 512
 
 In the absence of a file parameter, 'f', the option to provide input directly to the console is provided. 
 
-To compute the hash of the raw string 'test':
+To compute the SHA3-512 hash of the raw string 'test':
 ```aidl
 java KHash  
 ---------------------------------------------------
@@ -62,19 +62,21 @@ java KHASH -f test.txt -k keyfile -w hashbytes
 ## KCipher
 KCipher is a cli utility that provides authenticated symmetric encryption services derived from the KMACXOF256 primitive. The user provided password is combined with some psuedo-random bytes from ```SecureRandom``` and the resulting byte array is passed to KMACXOF256 as a key to generate two auxiliary keys. Both keys are again used with KMACXOF256, one to produce a mask that will be xored with the message to produce the ciphertext, and the other to compute the message authentication code. 
 
-To encrypt a file under the password, 'pass':
+To encrypt ```test.txt``` under the password, 'pass', and write the encrypted data to url ```enc.txt```:
 ```aidl
-java KCipher -e -f private.txt -pws pass -o enc.txt 
+java KCipher -e -f test.txt -pws pass -o enc.txt 
 ```
 
-The command above will encrypt ```private.txt``` under the password, 'pass', and write the output to ```enc.txt```. The 'pws' (password string) option will interpret the text following the 'pws' parameter as the password by converting the ASCII text directly to bytes (see ```KCipher.java``` for details). It is also possible to provide the password as a file:
+The 'pws' (password string) option will interpret the text following the 'pws' parameter as the password by converting the ASCII text directly to bytes (see ```KCipher.java``` for details). It is also possible to provide the password as a file:
 
 ```aidl
-java KCipher -e -f private.txt -pwf pswd.txt -o enc.txt
+java KCipher -e -f test.txt -pwf pswd.txt -o enc.txt
 ```
 With the 'pwf' option password bytes are read directly from the specified file. 
 
-Decrypting a file under a given password can be accomplished in a similar fashion:
+Decrypting a file under a given password can be accomplished in a similar fashion.
+
+To decrypt ```enc.txt``` under password, 'pass', and write the decrypted data to url ```dec.txt```:
 ```aidl
 java KCipher -d -f enc.txt -pwd pass -o dec.txt
 ```
@@ -111,13 +113,12 @@ Public and private keys are serialized based on a straightforward algorithm that
 ### Encryption
 Encryption is done by generating a large random integer, ```k```, with ```SecureRandom``` then, give a public key ,```V```, two points are computed ```W = k*V``` and ```Z = k*G```. ```W``` is then passed to KMACXOF256 as a key and used to generate the two auxiliary keys described above in ```KCipher```. The encryption algorithm then proceeds as it does in ```KCipher```, except that ```Z``` is transmitted along with the ciphertext and the MAC. 
 
-During decryption ```W``` is recomputed from ```Z``` using the private key, ```s```, ```W = s*Z```. Note the because ```V = s*G``` and ```Z = k*G```, ```s*Z = s*k*G = k*V = W```. W is again used to recompute two auxiliary keys and the decryption algorithm follows the same protocol as ```KCipher```.
+During decryption ```W``` is recomputed from ```Z``` using the private key, ```s```, ```W = s*Z```. Note the because ```V = s*G``` and ```Z = k*G```, ```s*Z = s*k*G = k*V = W```. ```W``` is again used to recompute the two auxiliary keys and the decryption algorithm proceeds as it does in ```KCipher```.
 
 To encrypt ```test.txt``` under a given public key, ```pub```, and write the encrypted file to ```enc.txt```:
 ```aidl
 java ECUtils -op encrypt -pub pub -f test.txt -o enc.txt
 ```
-During decryption the private key can either be passed as a file or generated from a password.
 
 To decrypt ```enc.txt``` under the password 'test' and write the decrypted data to ```dec.txt```:
 ```aidl
