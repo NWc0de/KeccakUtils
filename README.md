@@ -34,7 +34,7 @@ SHA3 512 bits (Console input):
 ``` 
 This option is available with cSHAKE256 and KMACXOF256 as well.
 
-To compute the hash of a file with cSHAKE256:
+To compute the hash of ```test.txt``` with cSHAKE256:
 ```aidl
 java KHash -op cSHAKE256 -f test.txt 
 ```
