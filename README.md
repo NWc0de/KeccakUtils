@@ -56,7 +56,7 @@ In all modes output may be saved to a file with the -w flag.
 
 To write the SHA3-512 hash of ```test.txt``` to url ```hashbytes```:
 ```aidl
-java KHASH -f test.txt -k keyfile -w hashbytes
+java KHASH -f test.txt -w hashbytes
 ```
 
 ## KCipher

@@ -71,7 +71,7 @@ public class ECUtil {
         byte[] in = FileUtilities.readFileBytes(args.dataUrl);
         FileUtilities.writeBytesToFile(ECCrypt.encryptEC(pub, in), args.outUrl);
         System.out.println("Successfully encrypted " + args.dataUrl + " under public key " + args.pubUrl + ". " +
-                "Encrypted data written to url: " + args.outUrl);
+                "\nEncrypted data written to url: " + args.outUrl);
     }
 
     private static void decryptData(ECArgs args) {
@@ -117,9 +117,11 @@ public class ECUtil {
         byte[] msg = FileUtilities.readFileBytes(args.dataUrl);
 
         if (ECSign.validateSignature(sig, pub, msg)) {
-            System.out.println("Signature OK.\n" + args.sigUrl + " is valid for " + args.pubUrl + " on message " + args.dataUrl);
+            System.out.println("Signature OK.\n" + "Signature " + args.sigUrl
+                    + " of file " + args.dataUrl + " is valid for public key " + args.pubUrl);
         } else {
-            System.out.println("Signature NOT VALID.\n" + args.sigUrl + " is not valid for " + args.pubUrl + " on message " + args.dataUrl);
+            System.out.println("Signature NOT VALID.\n" + "Signature " + args.sigUrl
+                    + " of file " + args.dataUrl + " is not valid for " + args.pubUrl);
         }
     }
 

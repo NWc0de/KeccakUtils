@@ -46,11 +46,17 @@ public class ECSign {
      * @return a boolean value indicating the validity of the signature
      */
     public static boolean validateSignature(byte[] sgn, CurvePoint pub, byte[] in) {
-        BigInteger[] ints = sigFromByteArray(sgn);
-        CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+        boolean valid;
+        try {
+            BigInteger[] ints = sigFromByteArray(sgn);
+            CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
+            BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+            valid = h.equals(ints[0]);
+        } catch (IllegalArgumentException iae) { // signature was not formatted properly
+            valid = false;
+        }
 
-        return h.equals(ints[0]);
+        return valid;
     }
 
     /**
