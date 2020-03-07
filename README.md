@@ -1,11 +1,10 @@
 # KeccakUtils
 
-KeccakUtils provides a range of cryptographic functions: SHA3 hash computation, authenticated encryption via KMACXOF256, elliptic curve key generation, asymmetric encryption (ECDHIES), and Schnorr signature generation and validation. The elliptic curve that provides the basis for the ECDHIES and Schnorr signature utilities is an Edwards curve (ed5211). The Keccak primitives are NIST compliant. Compliance testing was done in the style of NIST's Cryptographic Algorithm Validation Program using the suite of test vectors available on the [NIST CAVP page](https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing).
+KeccakUtils provides a range of cryptographic functions: SHA3/cSHAKE256 hash computation, authenticated encryption via KMACXOF256, elliptic curve key generation, asymmetric encryption (ECDHIES), and Schnorr signature generation and validation. The elliptic curve that provides the basis for the ECDHIES and Schnorr signature utilities is an Edwards curve (ed5211). The Keccak primitives are NIST compliant. Compliance testing was done in the style of NIST's Cryptographic Algorithm Validation Program using the suite of test vectors available on the [NIST CAVP page](https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/Secure-Hashing).
 
-## Keccak
 The core Keccak functions are implemented in ```Keccak.java``` (along with the associated sponge modality). SHA3, SHAKE256, cSHAKE256, and KMACXOF256 are made available through this class. The associated set of unit tests, ```SHA3Test.java``` and ```SHAKETest.java```, demonstrate compliance with NIST standards [NIST FIP 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) and [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf).
 
-#### KHash
+## KHash
 The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256, and KMACXOF256 directly from the command line.
 
 To compute the SHA3 hash of a file:
