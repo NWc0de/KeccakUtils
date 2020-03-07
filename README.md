@@ -41,7 +41,7 @@ java KHash -op cSHAKE256 -f test.txt
 ```
 Executing KHash with the cSHAKE256 parameter will compute the cSHAKE256 hash of the provided input and display the digest to the command line. The 'cs' parameter allows a customization string to be defined (see [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf) for more details). By default the customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
 
-To compute the hash of ```test.txt``` under customization string 'test':
+To compute the cSHAKE256 hash of ```test.txt``` under customization string 'test':
 ```aidl
 java KHash -op cSHAKE256 -cs test -f test.txt 
 ```
@@ -77,17 +77,21 @@ With the 'pwf' option password bytes are read directly from the specified file.
 
 Decrypting a file under a given password can be accomplished in a similar fashion:
 ```aidl
+java KCipher -d -f enc.txt -pwd pass -o dec.txt
+```
+It is also possible to provide a password file for decryption:
+```aidl
 java KCipher -d -f enc.txt -pwf pswd.txt -o dec.txt
 ```
 
-The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i flag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.
+The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the 'i' flag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.
 
 ## ECUtils
-ECUtils is a cli utility that provides a range of asymmetric crypto services based on elliptic curve arithmetic (specifically the Edwards curve e5211). For more information about this specific curve and the associated arithmetic algorithms see ```CurvePoint.java```. This utility package enables the user to generate key pairs, encrypt and store key pairs (encryption of private key files is done with the ```KCrypt``` method described above), and encrypt/decrypt and sign messages with the generated elliptic curve key pairs.  
+ECUtils is a cli utility that provides a range of asymmetric crypto services provided by elliptic curve based protocols over the Edwards curve ed5211. For more information about this specific curve and the associated arithmetic algorithms see ```CurvePoint.java```. This utility package enables the user to generate key pairs, encrypt and store key pairs (encryption of private key files is done with the ```KCipher``` method described above), and encrypt/decrypt and sign messages with the generated elliptic curve key pairs.  
 
 ### Key Generation
 
-Key generation is done by using KMACXOF256, in conjunction with a user provided password, to derive the private key (a ```BigInteger```), which is then multiplied with the public constant point ```G``` to generate the public key (a ```CurvePoint```). For more details about this process see ```ECKeyPair.java```. 
+Key generation is done by using KMACXOF256, in conjunction with a user provided password, to derive the private key (```s```, a ```BigInteger```), which is then multiplied with the public constant point ```G``` to generate the public key (```V```, a ```CurvePoint```), to create a public key pair ```(s, V)```. For more details about this process see ```ECKeyPair.java```. 
 
 To generate a new keypair under the password 'test' and write the public key to url ```pub``` and the private key to url ```prv```:
 ```aidl
@@ -106,17 +110,21 @@ java ECUtils -op keygen -pub pub -prv prv -pwd test -rpwd pftest
 Public and private keys are serialized based on a straightforward algorithm that can be found in ```CurvePoint``` and ```ECKeyPair```. 
 
 ### Encryption
+Encryption is done by generating a large random integer, ```k```, with ```SecureRandom``` then, give a public key ,```V```, two points are computed ```W = k*V``` and ```Z = k*G```. ```W``` is then passed to KMACXOF256 as a key and used to generate the two auxiliary keys described above in ```KCipher```. The encryption algorithm then proceeds as it does in ```KCipher```, except that ```Z``` is transmitted along with the ciphertext and the MAC. 
+
+During decryption ```W``` is recomputed from ```Z``` using the private key, ```s```, ```W = s*Z```. Note the because ```V = s*G``` and ```Z = k*G```, ```s*Z = s*k*G = k*V = W```. W is again used to recompute two auxiliary keys and the decryption algorithm follows the same protocol as ```KCipher```.
 
 To encrypt ```test.txt``` under a given public key, ```pub```, and write the encrypted file to ```enc.txt```:
 ```aidl
 java ECUtils -op encrypt -pub pub -f test.txt -o enc.txt
 ```
 During decryption the private key can either be passed as a file or generated from a password.
-To decrypt ```enc.txt``` under the password used to generate ```pub```, 'test', and write the decrypted data to ```dec.txt```:
+
+To decrypt ```enc.txt``` under the password 'test' and write the decrypted data to ```dec.txt```:
 ```aidl
 java ECUtils -op decrypt -pwd test -f enc.txt -o dec.txt
 ```
-To perform the same operation except using the private key file ```prv```, encrypted under password 'pftest', to derive the private key:
+To perform the same operation except using the private key file ```prv``` (encrypted under password 'pftest') to derive the private key:
 ```aidl
 java ECUtils -op decrypt -prv prv -rpwd pftest -f enc.txt -o dec.txt
 ```
@@ -142,6 +150,3 @@ java ECUtils -op verify -f test.txt -s sgn -pub pub
 ```
 
 Signatures are serialized and parsed with a straightforward algorithm that can be found in ```ECSign.java```.
-
-## Todo
-Generate EC files (public, private, signatures) in a standardized way to enable interoperability.
