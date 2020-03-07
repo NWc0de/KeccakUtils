@@ -11,44 +11,53 @@ The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256, an
 To compute the SHA3 hash of a file:
 
 ```aidl
-java KHASH -im file -i test.txt
+java KHASH -f test.txt
 ```
-The command above will compute the SHA3-512 hash of ```test.txt``` and display the output to the console. In the absence of an 'op' parameter SHA3 is implied. Variable output lengths can be specified with the 'l' parameter (interpreted as bit length), although with SHA3 output bit lengths are restricted to 224, 256, 384, 512. The command above is equivalent to:
+The command above will compute the SHA3-512 hash of ```test.txt``` and display the output to the console. In the absence of an 'op' parameter SHA3 is implied. Variable output lengths can be specified with the 'l' parameter (interpreted as bit length), although SHA3 output bit lengths are restricted to 224, 256, 384, 512. The command above is equivalent to:
 
 ```aidl
-java KHASH -op SHA3 -im file -i test.txt -l 512
+java KHASH -op SHA3 -f test.txt -l 512
 ```
+
+In the absence of a file parameter, 'f', the option to provide input directly to the console is provided. 
+
+To compute the hash of the raw string 'test':
+```aidl
+java KHash  
+---------------------------------------------------
+Enter message to be hashed:
+
+test
+More text? y/n
+n
+SHA3 512 bits (Console input): 
+9ece086e9bac491fac5c1d1046ca11d737b92a2b2ebd93f005d7b710110c0a678288166e7fbe796883a4f2e9b3ca9f484f521d0ce464345cc1aec96779149c14
+``` 
+This option is available with cSHAKE256 and KMACXOF256 as well.
 
 To compute the hash of a file with cSHAKE256:
 ```aidl
-java KHash -op cSHAKE256 -im file -i test.txt 
+java KHash -op cSHAKE256 -f test.txt 
 ```
 Executing KHash with the cSHAKE256 parameter will compute the cSHAKE256 hash of the provided input and display the digest to the command line. The 'cs' parameter allows a customization string to be defined (see [NIST SP 800-185](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf) for more details). By default the customization string is an empty string, which renders cSHAKE256 equivalent to SHAKE256.
 
 To compute the hash of ```test.txt``` under customization string 'test':
 ```aidl
-java KHash -op cSHAKE256 -cs test -im file -i test.txt 
+java KHash -op cSHAKE256 -cs test -f test.txt 
 ```
-
-There are two available input modes, both of which are specified with the 'im' flag. The 'file' input mode interprets the input, denoted by the 'i' parameter, as a url while the 'string' input mode interprets input as raw data (the text following the 'i' parameter is translated directory to bytes). 
-
-To compute the hash of the raw string 'test':
-```aidl
-java KHash -op cSHAKE256 -im string -i test
-``` 
 
 Alternatively, KMACXOF256 is available as a keyed hash function. 
 
 To compute the KMACXOF256 hash of ```test.txt``` under the key bytes provided by ```keyfile```:
 ```aidl
-java KHASH -op KMACXOF256 -im file -i test.txt -k keyfile 
+java KHASH -op KMACXOF256 -f test.txt -k keyfile 
 ```
 
 In all modes output may be saved to a file with the -w flag. 
 
-To write the SHA3-512 hash of ```test.txt``` to ```hashbytes```:
+To write the SHA3-512 hash of ```test.txt``` to url ```hashbytes```:
 ```aidl
-java KHASH -w hashbytes -im file -i test.txt -k keyfile
+java KHASH -f test.txt -k keyfile -w hashbytes
 ```
 
 ## KCipher
@@ -72,3 +81,67 @@ java KCipher -d -f enc.txt -pwf pswd.txt -o dec.txt
 ```
 
 The authentication tag (automatically computed during encryption) is checked by default. If the tags do not match no data is written to disk and a warning is presented. This behavior can be disabled with the -i flag, however this is not recommended. If authentication is disabled, the user is still informed of the validity of the authentication tag but the decrypted data will be written to disk regardless of the validity of the MAC.
+
+## ECUtils
+ECUtils is a cli utility that provides a range of asymmetric crypto services based on elliptic curve arithmetic (specifically the Edwards curve e5211). For more information about this specific curve and the associated arithmetic algorithms see ```CurvePoint.java```. This utility package enables the user to generate key pairs, encrypt and store key pairs (encryption of private key files is done with the ```KCrypt``` method described above), and encrypt/decrypt and sign messages with the generated elliptic curve key pairs.  
+
+### Key Generation
+
+Key generation is done by using KMACXOF256, in conjunction with a user provided password, to derive the private key (a ```BigInteger```), which is then multiplied with the public constant point ```G``` to generate the public key (a ```CurvePoint```). For more details about this process see ```ECKeyPair.java```. 
+
+To generate a new keypair under the password 'test' and write the public key to url ```pub``` and the private key to url ```prv```:
+```aidl
+java ECUtils -op keygen -pub pub -prv prv -pwd test
+---------------------------------------------------
+New EC key pair successfully generated.
+Private key encrypted under password test and written to url: prv
+Public key written to url: pub
+```
+By default the private key is encrypted under the password used to generate the key pair. A seperate password for encrypting the private key file can be specified with the 'rpwd' parameter. 
+
+To generate a new keypair under the password 'test' and write the public key to url ```pub``` and the private key to url ```prv``` (encrypted under password 'pftest'):
+```aidl
+java ECUtils -op keygen -pub pub -prv prv -pwd test -rpwd pftest
+```
+Public and private keys are serialized based on a straightforward algorithm that can be found in ```CurvePoint``` and ```ECKeyPair```. 
+
+### Encryption
+
+To encrypt ```test.txt``` under a given public key, ```pub```, and write the encrypted file to ```enc.txt```:
+```aidl
+java ECUtils -op encrypt -pub pub -f test.txt -o enc.txt
+```
+During decryption the private key can either be passed as a file or generated from a password.
+To decrypt ```enc.txt``` under the password used to generate ```pub```, 'test', and write the decrypted data to ```dec.txt```:
+```aidl
+java ECUtils -op decrypt -pwd test -f enc.txt -o dec.txt
+```
+To perform the same operation except using the private key file ```prv```, encrypted under password 'pftest', to derive the private key:
+```aidl
+java ECUtils -op decrypt -prv prv -rpwd pftest -f enc.txt -o dec.txt
+```
+
+### Signatures
+ECutils uses the Schnorr signature scheme to compute and verify signatures. This involves generating a large random ```k``` with a user provided password and KMACXOF256, which is then multiplied by the public constant point ```G``` to generate, ```U = k*G```. Instead of a challenge response protocol, the scheme employed by ECUtils more closely resembles a SNARK. ```U``` is used in conjunction with KMACXOF256 and the message to be signed to generate a large integer ```h``` which is one half of the signature along with ```z = (k - h*s) mod r```, where ```s``` is the private scalar of the key that is signing the message and ```r``` is a constant related to ed5211 (see ```CurvePoint.java``` for details). 
+
+The signature, ```(h, z)```, can then be verified with the corresponding public key, ```V```, by computing ```U = z*G + h*V```, and then using ```U``` with KMACXOF256 and the message that was signed to recompute ```h```, and checking whether the computed ```h``` matches the ```h``` in the signature. Note that because ```z = (k - h*s) mod r```, ```z*G = k*G - h*s*G```, and because ```V = s*G```, recomputing ```U``` with ```(h, z)``` results in ```k*G - h*s*G + h*s*G = k*G = U```. More details about this protocol can be found in the ```ECSign.java``` class.
+
+To sign ```test.txt``` under the private key generated by the password 'test' and write the signature to url ```sgn```:
+```aidl
+java ECUtils -op sign -pwd test -f test.txt -o sgn
+``` 
+
+To sign ```test.txt``` under the private key file ```prv``` (encrypted under password 'pftest') and write the signature to url ```sgn```:
+```aidl
+java ECUtils -op sign -prv prv -rpwd pftest -f test.txt -o sgn
+```
+
+To verify a signature, ```sgn```, of ```test.txt``` with the public key file ```pub```:
+```aidl
+java ECUtils -op verify -f test.txt -s sgn -pub pub
+```
+
+Signatures are serialized and parsed with a straightforward algorithm that can be found in ```ECSign.java```.
+
+## Todo
+Generate EC files (public, private, signatures) in a standardized way to enable interoperability.

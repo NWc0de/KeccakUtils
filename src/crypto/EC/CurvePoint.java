@@ -8,8 +8,9 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 /**
- * Implements a point on the Edwards curve E_521, defined by
- * E_521: x^2 + y^2 = 1 + d * (x^2) * y^2 where d = -376014
+ * Implements a point on the Edwards curve e5211, defined by
+ * e5211: x^2 + y^2 = 1 + d * (x^2) * y^2 where d = -376014
+ * and the modulo of the curve is the Mersenne prime 2^521 -1
  * @author Spencer Little
  * @version 1.0.0
  */
@@ -167,7 +168,7 @@ public class CurvePoint {
 
     /**
      * Compute a square root of v mod p with a specified least significant
-     * bit, if such a root exists. Provided by lecture notes of Paulo Baretto.
+     * bit, if such a root exists. Provided by lecture notes of Paulo Barreto.
      * @param v the radicand
      * @param lsb the desired least significant bit
      * @return sqaure root of v mod
@@ -185,7 +186,7 @@ public class CurvePoint {
 
     /**
      * Determines whether the provided x and y coordinate pair are a point
-     * on the E_521 curve by plugging them into the formula:
+     * on the e5211 curve by plugging them into the formula:
      * x^2 + y^2 = 1 + d * (x^2) * y^2 where d = -376014
      * @param x the x coordinate to be tested
      * @param y the y coordinate to be tested

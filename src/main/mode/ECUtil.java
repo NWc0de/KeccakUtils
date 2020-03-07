@@ -70,14 +70,15 @@ public class ECUtil {
         CurvePoint pub = ECKeyPair.readPubKeyFile(args.pubUrl);
         byte[] in = FileUtilities.readFileBytes(args.dataUrl);
         FileUtilities.writeBytesToFile(ECCrypt.encryptEC(pub, in), args.outUrl);
-        System.out.println("Encrypted data successfully written to url: " + args.outUrl);
+        System.out.println("Successfully encrypted " + args.dataUrl + " under public key " + args.pubUrl + ". " +
+                "Encrypted data written to url: " + args.outUrl);
     }
 
     private static void decryptData(ECArgs args) {
         ECKeyPair key;
         if (args.prvUrl != null) {
             key = ECKeyPair.readPrivateKeyFile(args.prvUrl, args.prvPwd);
-            System.out.println("Successfully read private key from file.");
+            System.out.println("Successfully read private key from " + args.prvUrl);
         } else {
             key = new ECKeyPair(args.genPwd);
             System.out.println("Successfully generated private key from password.");

@@ -66,7 +66,6 @@ public class KCipher {
             System.out.println("Successfully wrote decrypted file to url: " + args.outputURL);
             System.out.println("Authentication tag is valid.");
         }
-
     }
 
     private static void validateArgs(CipherArgs args) {

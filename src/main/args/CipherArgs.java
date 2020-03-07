@@ -26,7 +26,7 @@ public class CipherArgs {
     @Parameter(names = { "-i", "--ignore-checksum" }, description = "Write data to file even if the checksum does not match.")
     public boolean ignoreTag = false;
 
-    @Parameter(names = { "-pws", "--password-str" }, description = "Provide the password as a String.")
+    @Parameter(names = { "-pws", "--password-str" }, description = "Provide the password as a string.")
     public String pwdStr;
 
     @Parameter(names = { "-pwf", "--password-file" }, description = "Provide the password as a URL.")

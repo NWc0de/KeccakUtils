@@ -12,6 +12,8 @@ import crypto.keccak.Keccak;
 import util.FileUtilities;
 import util.HexUtilities;
 
+import java.util.Scanner;
+
 /**
  * The KeccakCli class enabled the user to call various Keccak
  * derived functions for the command line.
@@ -36,11 +38,11 @@ public class KHash {
 
         byte[] outBytes = processInput(args);
 
-        String tag = args.op + " " + args.bitLen + " bits (" + args.inputSource + "): \n";
+        String tag = args.op + " " + args.bitLen + " bits (" + (args.inputUrl == null ? "Console input" : args.inputUrl) + "): \n";
         System.out.println(tag + HexUtilities.bytesToHexString(outBytes).toLowerCase());
-        if (args.outputFile != null) {
-            FileUtilities.writeBytesToFile(outBytes, args.outputFile);
-            System.out.println("Output successfully written to " + args.outputFile);
+        if (args.outputUrl != null) {
+            FileUtilities.writeBytesToFile(outBytes, args.outputUrl);
+            System.out.println("Output successfully written to " + args.outputUrl);
         }
     }
 
@@ -66,31 +68,52 @@ public class KHash {
     }
 
     private static byte[] processKMAC(HashArgs args) {
-        if (args.keyFilePath == null) {
+        if (args.keyUrl == null) {
             System.out.println("KMACXOF mode requires a key file.");
             HashArgs.showHelp();
             System.exit(1);
         }
 
         byte[] inBytes = readBytes(args);
-        byte[] keyBytes = FileUtilities.readFileBytes(args.keyFilePath);
+        byte[] keyBytes = FileUtilities.readFileBytes(args.keyUrl);
 
         return Keccak.KMACXOF256(keyBytes, inBytes, args.bitLen, args.cString);
     }
 
+    /**
+     * Reads the user provided input and returns a byte array.
+     * @param args the argument object containing cli parameters
+     * @return the bytes representing the user input
+     */
     private static byte[] readBytes(HashArgs args) {
-        byte[] outBytes = null;
-        if (args.inputMode.equals("file")) {
-            outBytes = FileUtilities.readFileBytes(args.inputSource);
-        } else if (args.inputMode.equals("string")) {
-            outBytes = args.inputSource.getBytes();
+        byte[] outBytes;
+        if (args.inputUrl != null) {
+            outBytes = FileUtilities.readFileBytes(args.inputUrl);
         } else {
-            System.out.println("Unable to recognize input mode. Acceptable modes: file, string");
-            HashArgs.showHelp();
-            System.exit(1);
+            outBytes = getUserInput();
         }
 
         return outBytes;
+    }
+
+    /**
+     * Gets user input from the console.
+     * @return a byte array representing the text the user entered
+     */
+    private static byte[] getUserInput() {
+        Scanner in = new Scanner(System.in);
+        StringBuilder str = new StringBuilder();
+        String rsp;
+        System.out.println("Enter message to be hashed:\n");
+        do {
+            str.append(in.nextLine());
+            System.out.println("More text? y/n");
+            rsp = in.next();
+            while (!rsp.equalsIgnoreCase("y") && !rsp.equalsIgnoreCase("n")) rsp = in.next();
+            in.nextLine();
+        } while (rsp.equalsIgnoreCase("y"));
+
+        return str.toString().getBytes();
     }
 
 }
