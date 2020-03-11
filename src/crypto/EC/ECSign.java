@@ -16,8 +16,8 @@ import java.util.Arrays;
  */
 public class ECSign {
 
-    /** The standard byte length for one integer in a Schnorr signature. h = 64 bytes, z <= 65 bytes. */
-    private static final int STD_BLEN = 129;
+    /** The standard byte length for one integer in a Schnorr signature. h = 65 bytes, z <= 65 bytes. */
+    private static final int STD_BLEN = 130;
 
     /**
      * Generates a Schnorr signature of the provided byte array.
@@ -26,12 +26,17 @@ public class ECSign {
      * @return the digital signature in the form of a byte array
      */
     public static byte[] schnorrSign(BigInteger prvScl, byte[] in) {
-        byte[] kBytes = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
+        byte[] tmp = Keccak.KMACXOF256(prvScl.toByteArray(), in, 512, "N");
+        byte[] kBytes = new byte[65];
+        System.arraycopy(tmp, 0, kBytes, 1, tmp.length); // assure k is positive
         BigInteger k = new BigInteger(kBytes);
         k = k.multiply(BigInteger.valueOf(4L));
 
         CurvePoint U = ECKeyPair.G.scalarMultiply(k);
-        BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+        tmp = Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T");
+        byte[] hBytes = new byte[65];
+        System.arraycopy(tmp, 0, hBytes, 1, tmp.length); // assure h is positive
+        BigInteger h = new BigInteger(hBytes);
         BigInteger z = k.subtract(h.multiply(prvScl)).mod(CurvePoint.R);
 
         return sigToByteArray(h, z);
@@ -50,7 +55,10 @@ public class ECSign {
         try {
             BigInteger[] ints = sigFromByteArray(sgn);
             CurvePoint U = ECKeyPair.G.scalarMultiply(ints[1]).add(pub.scalarMultiply(ints[0]));
-            BigInteger h = new BigInteger(Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T"));
+            byte[] tmp = Keccak.KMACXOF256(U.getX().toByteArray(), in, 512, "T");
+            byte[] hBytes = new byte[65];
+            System.arraycopy(tmp, 0, hBytes, 1, tmp.length); // assure h is positive
+            BigInteger h = new BigInteger(hBytes);
             valid = h.equals(ints[0]);
         } catch (IllegalArgumentException iae) { // signature was not formatted properly
             valid = false;

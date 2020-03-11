@@ -37,7 +37,10 @@ public class ECKeyPair {
      * @param pwd the password used to derive the secret key
      */
     public ECKeyPair(byte[] pwd) {
-        BigInteger s = new BigInteger(Keccak.KMACXOF256(pwd, new byte[] {}, 512, "K"));
+        byte[] tmp = Keccak.KMACXOF256(pwd, new byte[]{}, 512, "K");
+        byte[] sBytes = new byte[65];
+        System.arraycopy(tmp, 0, sBytes, 1, tmp.length); // assure s is positive
+        BigInteger s = new BigInteger(sBytes);
         prvScalar = s.multiply(BigInteger.valueOf(4L));
         prvBytes = prvScalar.toByteArray();
         pub = G.scalarMultiply(prvScalar);

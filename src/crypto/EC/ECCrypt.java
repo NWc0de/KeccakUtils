@@ -29,8 +29,9 @@ public class ECCrypt {
      */
     public static byte[] encryptEC(CurvePoint pub, byte[] in) {
         SecureRandom randGen = new SecureRandom();
-        byte[] rndBytes = new byte[64];
+        byte[] rndBytes = new byte[65];
         randGen.nextBytes(rndBytes);
+        rndBytes[0] = 0; // assure k is positive
         BigInteger k = new BigInteger(rndBytes);
         k = k.multiply(BigInteger.valueOf(4L));
 
