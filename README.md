@@ -10,12 +10,12 @@ The Khash cli utility enables access to SHA3 (224, 256, 384, 512), cSHAKE256, an
 To compute the SHA3 hash of a file:
 
 ```aidl
-java KHASH -f test.txt
+java KHash -f test.txt
 ```
 The command above will compute the SHA3-512 hash of ```test.txt``` and display the output to the console. In the absence of an 'op' parameter SHA3 is implied. Variable output lengths can be specified with the 'l' parameter (interpreted as bit length), although SHA3 output bit lengths are restricted to 224, 256, 384, 512. The command above is equivalent to:
 
 ```aidl
-java KHASH -op SHA3 -f test.txt -l 512
+java KHash -op SHA3 -f test.txt -l 512
 ```
 
 In the absence of a file parameter, 'f', the option to provide input directly to the console is provided. 
@@ -49,14 +49,14 @@ Alternatively, KMACXOF256 is available as a keyed hash function.
 
 To compute the KMACXOF256 hash of ```test.txt``` under the key bytes provided by ```keyfile```:
 ```aidl
-java KHASH -op KMACXOF256 -f test.txt -k keyfile 
+java KHash -op KMACXOF256 -f test.txt -k keyfile 
 ```
 
 In all modes output may be saved to a file with the -w flag. 
 
 To write the SHA3-512 hash of ```test.txt``` to url ```hashbytes```:
 ```aidl
-java KHASH -f test.txt -w hashbytes
+java KHash -f test.txt -w hashbytes
 ```
 
 ## KCipher
